@@ -6,53 +6,18 @@ import requests
 
 from config import BASE_URL, SERVER_ID, USER_ID, PET_ID
 
-# ------------------------------------------------------------
-# 伺服器路徑組合（多伺服器 A / B / C）
-# ------------------------------------------------------------
-
-SERVER_PREFIX_MAP = {
-    "A": "/serverA",
-    "B": "/serverB",
-    "C": "/serverC",
-}
+SERVER_PREFIX_MAP = {"A": "/serverA", "B": "/serverB", "C": "/serverC"}
 
 
 def build_server_url(path: str) -> str:
-    """
-    將 BASE_URL + server_id 對應的前綴 + API 路徑組成完整 URL。
-
-    例如：
-    - BASE_URL = "http://140.113.1.23"
-    - SERVER_ID = "A"
-    - path = "/api/pet/update"
-
-    => http://140.113.1.23/serverA/api/pet/update
-    """
     prefix = SERVER_PREFIX_MAP.get(SERVER_ID, "/serverA")
     return BASE_URL.rstrip("/") + prefix + path
 
 
-# 寵物體力更新 API（Pi 回報用）
 SERVER_URL = build_server_url("/api/pet/update")
 
 
-# ------------------------------------------------------------
-# 上報函式：Pi 偵測到運動就呼叫這個
-# ------------------------------------------------------------
-
 def send_update():
-    """
-    向後端上報一次運動事件。
-
-    JSON 格式需符合後端 PetUpdateRequest：
-    {
-      "user_id": 1,
-      "pet_id": 1,
-      "server_id": "A",
-      "exercise_count": 1,
-      "source": "raspberry_pi"
-    }
-    """
     payload = {
         "user_id": USER_ID,
         "pet_id": PET_ID,
@@ -63,38 +28,20 @@ def send_update():
 
     try:
         r = requests.post(SERVER_URL, json=payload, timeout=3)
-        # 預期回傳統一格式：{ "success": true/false, "data": ..., "error": ... }
         try:
             resp = r.json()
-            print(
-                "[UPDATE]",
-                "status_code =", r.status_code,
-                "success =", resp.get("success"),
-            )
+            print("[UPDATE]", "status_code =", r.status_code, "success =", resp.get("success"))
         except Exception:
             print("[UPDATE] status_code =", r.status_code, "raw_response =", r.text)
     except Exception as e:
-        # 不要讓整個偵測程式因為網路問題直接炸掉
         print("[ERROR] 無法連線到伺服器或解析回應：", e)
 
 
-# ------------------------------------------------------------
-# OpenCV 動作偵測主程式
-# ------------------------------------------------------------
-
-def detect_motion():
-    """
-    使用 OpenCV 的「畫面差分」做簡單動作偵測：
-
-    1. 開啟攝影機
-    2. 連續讀取畫面，計算前一幀與目前畫面的差異
-    3. 差異（motion_level）超過門檻 => 視為一次運動，呼叫 send_update()
-    """
-
-    cap = cv2.VideoCapture(0)   # 0 = 預設攝影機
+def detect_jump():
+    cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
-        print("[ERROR] 無法開啟攝影機（請確認攝影機是否存在或未被佔用）")
+        print("[ERROR] 無法開啟攝影機")
         return
 
     print("正在初始化攝影機 ...")
@@ -108,7 +55,16 @@ def detect_motion():
 
     prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
 
-    print("開始動作偵測！（視窗中按 Q 結束）")
+    frame_h, frame_w = prev_gray.shape[:2]
+    prev_center_y = None
+    jump_cooldown = 0      # >0 表示剛偵測過一次跳躍，暫時不再觸發
+
+    # 可以調的參數
+    MOTION_THRESHOLD = 2_000_000   # 總動作量門檻
+    JUMP_PIXEL_DELTA = frame_h * 0.12  # 中心點往上移動多少像素算「起跳」
+    COOLDOWN_FRAMES = 20          # 一次跳躍後冷卻幾幀
+
+    print("開始跳躍偵測！（視窗中按 Q 結束）")
 
     while True:
         ret, frame = cap.read()
@@ -117,24 +73,49 @@ def detect_motion():
             continue
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # 1. 計算畫面差異
         diff = cv2.absdiff(prev_gray, gray)
-
-        # 2. 計算差異量（代表動作大小）
         motion_level = np.sum(diff)
 
-        # 3. 動作門檻值（可依環境調整）
-        #    如果太敏感就調大，太鈍就調小
-        if motion_level > 2_000_000:
-            print("⚡ 偵測到運動！motion_level =", motion_level)
+        # 做簡單二值化，只留下差異大的地方
+        _, thresh = cv2.threshold(diff, 25, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        jump_detected = False
+        current_center_y = None
+
+        if contours:
+            # 找最大那塊輪廓，假設是人
+            largest = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(largest)
+            current_center_y = y + h / 2
+
+            # 畫出偵測到的區域（方便測試）
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.line(frame, (0, int(current_center_y)), (frame_w, int(current_center_y)), (255, 0, 0), 1)
+
+            if prev_center_y is not None and jump_cooldown == 0:
+                # 往上移動量（前一幀中心 y - 目前中心 y）
+                delta_y = prev_center_y - current_center_y
+
+                if motion_level > MOTION_THRESHOLD and delta_y > JUMP_PIXEL_DELTA:
+                    jump_detected = True
+                    jump_cooldown = COOLDOWN_FRAMES
+
+        # 更新 cooldown
+        if jump_cooldown > 0:
+            jump_cooldown -= 1
+
+        # 真的判定為跳躍
+        if jump_detected:
+            print(f"⚡ 偵測到『跳躍』！motion_level={motion_level:.0f}")
             send_update()
-            time.sleep(1)  # 避免在一連串動作中觸發太多次
 
         prev_gray = gray
+        if current_center_y is not None:
+            prev_center_y = current_center_y
 
-        # 顯示畫面（方便測試）
-        cv2.imshow("Motion Detector (press Q to quit)", frame)
+        # 顯示畫面
+        cv2.imshow("Jump Detector (press Q to quit)", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
@@ -145,5 +126,4 @@ def detect_motion():
 if __name__ == "__main__":
     print("[INFO] 使用者 ID:", USER_ID, "寵物 ID:", PET_ID, "伺服器:", SERVER_ID)
     print("[INFO] 將上報到：", SERVER_URL)
-    detect_motion()
-
+    detect_jump()
