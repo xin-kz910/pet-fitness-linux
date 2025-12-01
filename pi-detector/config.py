@@ -4,7 +4,6 @@ Raspberry Pi 動作偵測子系統設定檔
 
 請依照實際環境修改以下參數：
 - BASE_URL  ：後端主機的對外 HTTP 位址（含 port，若需要）
-- SERVER_ID ：這台 Pi 要連的伺服器編號 "A" / "B" / "C"
 - USER_ID   ：此 Pi 所屬玩家的 user_id
 - PET_ID    ：此玩家的 pet_id
 """
@@ -17,9 +16,8 @@ Raspberry Pi 動作偵測子系統設定檔
 
 BASE_URL = "http://YOUR_SERVER_HOST"   # TODO: 修改成實際伺服器位址
 
-# 這台 Pi 連哪一台伺服器："A"、"B" 或 "C"
-SERVER_ID = "A"
-
 # 測試 / Demo 用：請改成實際存在於資料庫中的 user_id / pet_id
 USER_ID = 1
 PET_ID = 1
+
+
