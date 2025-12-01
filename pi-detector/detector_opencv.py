@@ -1,11 +1,15 @@
+import time
+
 import cv2
 import numpy as np
 import requests
-import time
 
-from config import USER_ID, PET_ID, SERVER_ID, BASE_URL
+from config import BASE_URL, SERVER_ID, USER_ID, PET_ID
 
-# server_id -> nginx 路徑前綴
+# ------------------------------------------------------------
+# 伺服器路徑組合（多伺服器 A / B / C）
+# ------------------------------------------------------------
+
 SERVER_PREFIX_MAP = {
     "A": "/serverA",
     "B": "/serverB",
@@ -15,23 +19,39 @@ SERVER_PREFIX_MAP = {
 
 def build_server_url(path: str) -> str:
     """
-    path 例如 "/api/pet/update"
-    回傳完整 URL，例如 "http://.../serverA/api/pet/update"
-    若未使用多伺服器 / Nginx，可直接在 BASE_URL 填完整路徑。
+    將 BASE_URL + server_id 對應的前綴 + API 路徑組成完整 URL。
+
+    例如：
+    - BASE_URL = "http://140.113.1.23"
+    - SERVER_ID = "A"
+    - path = "/api/pet/update"
+
+    => http://140.113.1.23/serverA/api/pet/update
     """
     prefix = SERVER_PREFIX_MAP.get(SERVER_ID, "/serverA")
-    return BASE_URL + prefix + path
+    return BASE_URL.rstrip("/") + prefix + path
 
 
-# 寵物體力更新 API
+# 寵物體力更新 API（Pi 回報用）
 SERVER_URL = build_server_url("/api/pet/update")
 
 
+# ------------------------------------------------------------
+# 上報函式：Pi 偵測到運動就呼叫這個
+# ------------------------------------------------------------
+
 def send_update():
     """
-    向後端上報一次運動事件：
-    - user_id / pet_id / server_id / exercise_count / source
-    - 格式符合後端 PetUpdateRequest 規格
+    向後端上報一次運動事件。
+
+    JSON 格式需符合後端 PetUpdateRequest：
+    {
+      "user_id": 1,
+      "pet_id": 1,
+      "server_id": "A",
+      "exercise_count": 1,
+      "source": "raspberry_pi"
+    }
     """
     payload = {
         "user_id": USER_ID,
@@ -43,23 +63,38 @@ def send_update():
 
     try:
         r = requests.post(SERVER_URL, json=payload, timeout=3)
-        resp = r.json()
-        print("[UPDATE] status_code =", r.status_code, "success =", resp.get("success"))
+        # 預期回傳統一格式：{ "success": true/false, "data": ..., "error": ... }
+        try:
+            resp = r.json()
+            print(
+                "[UPDATE]",
+                "status_code =", r.status_code,
+                "success =", resp.get("success"),
+            )
+        except Exception:
+            print("[UPDATE] status_code =", r.status_code, "raw_response =", r.text)
     except Exception as e:
+        # 不要讓整個偵測程式因為網路問題直接炸掉
         print("[ERROR] 無法連線到伺服器或解析回應：", e)
 
 
+# ------------------------------------------------------------
+# OpenCV 動作偵測主程式
+# ------------------------------------------------------------
+
 def detect_motion():
     """
-    使用 OpenCV 做簡單動作偵測：
-    - 讀取攝影機連續畫面
-    - 計算前一幀與現在畫面差異
-    - 差異量超過門檻 -> 視為一次運動，呼叫 send_update()
+    使用 OpenCV 的「畫面差分」做簡單動作偵測：
+
+    1. 開啟攝影機
+    2. 連續讀取畫面，計算前一幀與目前畫面的差異
+    3. 差異（motion_level）超過門檻 => 視為一次運動，呼叫 send_update()
     """
+
     cap = cv2.VideoCapture(0)   # 0 = 預設攝影機
 
     if not cap.isOpened():
-        print("[ERROR] 無法開啟攝影機")
+        print("[ERROR] 無法開啟攝影機（請確認攝影機是否存在或未被佔用）")
         return
 
     print("正在初始化攝影機 ...")
@@ -73,7 +108,7 @@ def detect_motion():
 
     prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
 
-    print("開始動作偵測！（按 Q 結束）")
+    print("開始動作偵測！（視窗中按 Q 結束）")
 
     while True:
         ret, frame = cap.read()
@@ -89,17 +124,18 @@ def detect_motion():
         # 2. 計算差異量（代表動作大小）
         motion_level = np.sum(diff)
 
-        # 3. 動作門檻值（可依實際環境調整）
+        # 3. 動作門檻值（可依環境調整）
+        #    如果太敏感就調大，太鈍就調小
         if motion_level > 2_000_000:
             print("⚡ 偵測到運動！motion_level =", motion_level)
             send_update()
-            time.sleep(1)  # 避免連續觸發過多
+            time.sleep(1)  # 避免在一連串動作中觸發太多次
 
         prev_gray = gray
 
-        # 顯示畫面（測試用）
-        cv2.imshow("Motion Detector", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        # 顯示畫面（方便測試）
+        cv2.imshow("Motion Detector (press Q to quit)", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
     cap.release()
@@ -107,4 +143,7 @@ def detect_motion():
 
 
 if __name__ == "__main__":
+    print("[INFO] 使用者 ID:", USER_ID, "寵物 ID:", PET_ID, "伺服器:", SERVER_ID)
+    print("[INFO] 將上報到：", SERVER_URL)
     detect_motion()
+
