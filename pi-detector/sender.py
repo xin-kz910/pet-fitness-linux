@@ -1,6 +1,6 @@
 import requests
 
-from config import USER_ID, PET_ID, SERVER_ID, BASE_URL
+from config import BASE_URL, SERVER_ID, USER_ID, PET_ID
 
 SERVER_PREFIX_MAP = {
     "A": "/serverA",
@@ -11,7 +11,7 @@ SERVER_PREFIX_MAP = {
 
 def build_server_url(path: str) -> str:
     prefix = SERVER_PREFIX_MAP.get(SERVER_ID, "/serverA")
-    return BASE_URL + prefix + path
+    return BASE_URL.rstrip("/") + prefix + path
 
 
 SERVER_URL = build_server_url("/api/pet/update")
@@ -20,8 +20,7 @@ SERVER_URL = build_server_url("/api/pet/update")
 def send_exercise_once():
     """
     單次上報運動事件：
-    - 不做動作偵測，只是確認 Pi -> 後端 API 是否通
-    - 可給後端 / cron 組測試使用
+    - 不依賴攝影機，用來測試 API 是否連得通
     """
     payload = {
         "user_id": USER_ID,
@@ -33,14 +32,15 @@ def send_exercise_once():
 
     try:
         r = requests.post(SERVER_URL, json=payload, timeout=3)
-        print("[SENDER] Status:", r.status_code)
+        print("[SENDER] status_code:", r.status_code)
         try:
-            print("[SENDER] Response JSON:", r.json())
+            print("[SENDER] response JSON:", r.json())
         except Exception:
-            print("[SENDER] Raw Response:", r.text)
+            print("[SENDER] raw response:", r.text)
     except Exception as e:
         print("[ERROR] 無法連線到伺服器：", e)
 
 
 if __name__ == "__main__":
+    print("[INFO] 將上報到：", SERVER_URL)
     send_exercise_once()
