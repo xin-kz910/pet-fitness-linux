@@ -11,10 +11,9 @@ serverBtns.forEach(btn => {
         const server_id = e.target.getAttribute('data-server-id');
         localStorage.setItem('selected_server_id', server_id);
 
-        console.log(`已選擇伺服器: ${server_id}，準備進入大廳...`);
+        console.log(`已選擇伺服器: ${server_id}，直接進入大廳...`);
         
-        // 3. 跳轉到大廳
-        alert(`已選擇 ${server_id}，請點擊確認進入大廳！`); // 測試用 alert
-        window.location.href = 'lobby.html';
+        // 3. 移除 alert，直接跳轉到大廳
+        window.location.href = 'lobby.html'; 
     });
 });
