@@ -665,21 +665,42 @@ async function initializeLobby() {
     // ⭐ 用伺服器 ID 來切換對應地圖 ⭐
     applyMapByServer(selected_server_id);
 
-    // 取得寵物狀態
+    // 取得寵物狀態（從後端 API）
     try {
+        // 這裡會打到 /api/pet/status?user_id=xxx
         const petData = await getPetStatus();
-        petData.spirit_value = 50; // 測試固定值
-        const { statusName } = getSpiritInfo(petData.spirit_value);
 
-        petNameEl.textContent = `寵物名稱：${petData.name}`;
-        petLevelEl.textContent = `精神狀態：${petData.spirit_value} (${statusName})`;
-        updateSpiritBadge(petData.spirit_value);
-        myPetNameTagEl.textContent = petData.display_name;
+        // 後端回傳：
+        // {
+        //   pet_id,
+        //   pet_name,
+        //   energy,   // 0-100
+        //   status,   // "SLEEPING" / "TIRED" / "ACTIVE"
+        //   score
+        // }
 
-        localStorage.setItem('my_spirit_value', petData.spirit_value);
-        localStorage.setItem('my_display_name', petData.display_name);
+        const spiritValue = typeof petData.energy === 'number'
+            ? petData.energy
+            : 50; // fallback 避免 undefined
+
+        const { statusName } = getSpiritInfo(spiritValue);
+
+        // 顯示到畫面上
+        petNameEl.textContent = `寵物名稱：${petData.pet_name || '未命名寵物'}`;
+        petLevelEl.textContent = `精神狀態：${spiritValue} (${statusName})`;
+        updateSpiritBadge(spiritValue);
+
+        // 名牌顯示玩家名稱（從登入時保存的 display_name）
+        const myDisplayName = localStorage.getItem('display_name') || '玩家';
+        myPetNameTagEl.textContent = myDisplayName;
+
+        // 存到 localStorage，給 game.html 使用
+        localStorage.setItem('my_spirit_value', String(spiritValue));
+        localStorage.setItem('my_display_name', myDisplayName);
+
     } catch (error) {
         console.error('無法載入寵物狀態，使用模擬資料。', error);
+
         const mockSpirit = 50;
         const { statusName } = getSpiritInfo(mockSpirit);
 
@@ -689,11 +710,8 @@ async function initializeLobby() {
 
         myPetNameTagEl.textContent = localStorage.getItem('display_name') || '玩家';
 
-        localStorage.setItem('my_spirit_value', mockSpirit);
-        localStorage.setItem(
-            'my_display_name',
-            localStorage.getItem('display_name') || '玩家'
-        );
+        localStorage.setItem('my_spirit_value', String(mockSpirit));
+        localStorage.setItem('my_display_name', localStorage.getItem('display_name') || '玩家');
     }
 
     // 初始寵物世界座標（世界中心）
