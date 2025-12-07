@@ -63,6 +63,9 @@ const PET_SPRITES = {
     right: './assets/pet-right.png',
 };
 
+// 記錄其他玩家的寵物 DOM
+const otherPets = {};
+
 const SERVER_THEMES = {
     A: "🌳 汪洋草原",
     B: "❄️ 凍原腳印",
@@ -174,6 +177,25 @@ function updateMyPetScreenPosition(worldX, worldY) {
     myPetEl.style.left = `${screenX - petWidth / 2}px`;
     myPetEl.style.top = `${screenY - petHeight}px`;
 }
+
+// ⭐ 其他玩家的寵物：根據世界座標 + 鏡頭偏移，計算畫面位置
+function updateOtherPetScreenPosition(petEl, worldX, worldY) {
+    const worldWidth = worldLayerEl.scrollWidth || worldLayerEl.offsetWidth;
+    const worldHeight = worldLayerEl.scrollHeight || worldLayerEl.offsetHeight;
+
+    const worldPX = (worldX / WORLD_WIDTH) * worldWidth;
+    const worldPY = (worldY / WORLD_HEIGHT) * worldHeight;
+
+    const screenX = worldPX - cameraOffsetX;
+    const screenY = worldPY - cameraOffsetY;
+
+    const petWidth = petEl.offsetWidth || 96;
+    const petHeight = petEl.offsetHeight || 110;
+
+    petEl.style.left = `${screenX - petWidth / 2}px`;
+    petEl.style.top = `${screenY - petHeight}px`;
+}
+
 
 function getSpiritInfo(spirit) {
     let statusName = '';
@@ -421,6 +443,39 @@ commRequestBadge.addEventListener('click', () => {
     }
 });
 
+// ⭐ 取得或建立「其他玩家的寵物」DOM
+function getOrCreateOtherPet(userId, displayName) {
+    // 如果已經建立過，就直接回傳
+    if (otherPets[userId]) {
+        return otherPets[userId];
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('pet-avatar', 'other-pet');
+    wrapper.dataset.userId = userId;
+
+    const img = document.createElement('img');
+    img.src = PET_SPRITES.idle;
+    img.classList.add('pet-img');
+
+    const nameTag = document.createElement('div');
+    nameTag.classList.add('pet-name-tag');
+    nameTag.textContent = displayName || `玩家 ${userId}`;
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(nameTag);
+
+    // 讓你可以點別人寵物，沿用原本的點擊邏輯
+    wrapper.addEventListener('click', handlePetClick);
+
+    // 放到 world-layer 裡
+    worldLayerEl.appendChild(wrapper);
+
+    otherPets[userId] = wrapper;
+    return wrapper;
+}
+
+
 // ======================================================
 // 5. 點擊寵物：彈出選項菜單
 // ======================================================
@@ -639,6 +694,32 @@ function handleBattleAccepted(data) {
     }
 }
 
+// ⭐ 收到「其他玩家移動」事件
+// 這裡直接把「payload」當參數來收
+function handleOtherPetMoved(payload) {
+    console.log('[WS] other_pet_moved payload =', payload);
+
+    const myId = Number(localStorage.getItem('user_id'));
+
+    // payload 可能是 { player: {...} }，也可能乾脆就是 player 本人
+    const player = payload.player || payload;
+
+    const uid = Number(player.user_id);
+    if (!uid || uid === myId) {
+        // 不處理自己
+        return;
+    }
+
+    const x = Number(player.x);
+    const y = Number(player.y);
+    if (Number.isNaN(x) || Number.isNaN(y)) {
+        return;
+    }
+
+    const petEl = getOrCreateOtherPet(uid, player.display_name);
+    updateOtherPetScreenPosition(petEl, x, y);
+}
+
 // ======================================================
 // 8. 初始化大廳
 // ======================================================
@@ -816,6 +897,9 @@ async function initializeLobby() {
     registerCallback('update_pet_list', handleUpdatePetList);
     registerCallback('chat_request', handleChatRequest);
     registerCallback('battle_accepted', handleBattleAccepted);
+
+    // ⭐ 新增：處理其他玩家移動
+    registerCallback('other_pet_moved', handleOtherPetMoved);
 
     initWebSocket(token, myUserId);
 
