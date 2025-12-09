@@ -5,6 +5,7 @@
     --border-width: 4px;
 }
 
+
 * {
     box-sizing: border-box;
     /* 這裡可以嘗試引入一個像素字體，讓文字看起來就是像素風 */
