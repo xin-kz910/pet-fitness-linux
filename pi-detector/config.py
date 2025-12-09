@@ -1,23 +1,32 @@
 # config.py
 """
-Raspberry Pi 動作偵測子系統設定檔
+動作偵測（電腦鏡頭版）共用設定 - 利用 /api/user/server_status 自動判斷 server
 
-請依照實際環境修改以下參數：
-- BASE_URL  ：後端主機的對外 HTTP 位址（含 port，若需要）
-- USER_ID   ：此 Pi 所屬玩家的 user_id
-- PET_ID    ：此玩家的 pet_id
+這裡只放「不會因為切換伺服器而改變」的設定：
+- BASE_URL：Nginx 對外位址
+- USER_ID：這台偵測器對應的玩家 ID
 """
 
-# 範例：
-# 若後端 A 架在 http://140.113.1.23，且有 Nginx 做反向代理：
-#   BASE_URL = "http://140.113.1.23"
-# 若沒有 Nginx，直接用 uvicorn 跑在 8000：
-#   BASE_URL = "http://140.113.1.23:8000"
+# ★ Nginx 對外主機位址（不要加 /serverA）
+BASE_URL = "http://10.0.2.15"  # TODO: 換成你們實際的 Nginx IP
 
-BASE_URL = "http://YOUR_SERVER_HOST"   # TODO: 修改成實際伺服器位址
-
-# 測試 / Demo 用：請改成實際存在於資料庫中的 user_id / pet_id
+# ★ 這台偵測器對應的 user_id（登入之後知道）
 USER_ID = 1
-PET_ID = 1
 
+# ★ 給偵測器查「目前 server_id」用的 API
+#   這支 API 是你剛才貼的 /api/user/server_status
+#   因為 DB 是共用的，所以你可以永遠經由 /serverA 來查這個資訊。
+SERVER_STATUS_URL = f"{BASE_URL}/serverA/api/user/server_status"
 
+# ★ 用來查 pet 狀態的 API（會依照 server_id 加上不同 prefix）
+PET_STATUS_PATH = "/api/pet/status"
+
+# ★ 寵物體力更新 API 路徑（不含 prefix）
+UPDATE_PATH = "/api/pet/update"
+
+# ★ server_id -> Nginx prefix 對照表
+SERVER_PREFIX_MAP = {
+    "A": "/serverA",
+    "B": "/serverB",
+    "C": "/serverC",
+}
