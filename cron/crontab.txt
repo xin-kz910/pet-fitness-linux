@@ -1,0 +1,5 @@
+# 每 20 分鐘：體力自然下降 & 體力為 0 扣分
+*/20 * * * * cd /home/ubuntu/pet-backend && /home/ubuntu/pet-env/bin/python cron/energy_decay.py >> /var/log/pet_energy_decay.log 2>&1
+
+# 每 15 分鐘：重算排行榜並寫入 leaderboard table
+*/15 * * * * cd /home/ubuntu/pet-backend && /home/ubuntu/pet-env/bin/python cron/update_leaderboard.py >> /var/log/pet_leaderboard.log 2>&1
