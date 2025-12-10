@@ -245,6 +245,7 @@ function endGame() {
     // 處理 BATTLE 模式的結果顯示 (FIX 7)
     else if (gameMode === 'battle') {
         let resultText;
+        let battleResult; //輸贏
         if (myGameScore > opponentScore) {
             resultText = `<span style="color: ${WIN_COLOR};">🏆 獲勝！</span>`;
             finalPetImg = './assets/pet-win.png'; 
@@ -266,7 +267,8 @@ function endGame() {
                 最終結果：${resultText}
             </div>
         `;
-        
+
+        const battleId = localStorage.getItem('current_battle_id'); //傳回後端
         sendMessage('game_end', {
             final_score: myGameScore,
             game_id: localStorage.getItem('game_id')
