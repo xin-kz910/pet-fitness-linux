@@ -56,20 +56,20 @@
 前端、Nginx、後端 A/B/C、WebSocket A/B/C、資料庫、Raspberry Pi。
 
 ```
-[ Browser Frontend ]
-         │
-         ▼
-  Nginx Reverse Proxy
-         │
- ┌───────┼───────────┐
- ▼       ▼           ▼
+     [ Browser Frontend ]
+              │
+              ▼
+      Nginx Reverse Proxy
+              │
+ ┌────────────┼───────────┐
+ ▼            ▼           ▼
 Backend A  Backend B  Backend C
-  │         │           │
-  ▼         ▼           ▼
- WS A     WS B        WS C
-         │
-         ▼
-     Database
+  │           │           │
+  ▼           ▼           ▼
+ WS A       WS B        WS C
+              │
+              ▼
+          Database
 
 ```
 
