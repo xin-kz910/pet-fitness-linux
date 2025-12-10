@@ -69,3 +69,4 @@ chmod +x /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
 /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
 
 
+
