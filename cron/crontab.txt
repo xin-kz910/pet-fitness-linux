@@ -3,3 +3,7 @@
 
 # 每 15 分鐘：重算排行榜並寫入 leaderboard table
 */30 * * * * /usr/bin/python3 /home/jiayen/Desktop/pet_project/cron/update_leaderboard.py >> /home/jiayen/Desktop/pet_project/cron/leaderboard.log 2>&1
+
+
+*/20 * * * * cd /home/jiayen/Desktop/pet_project/backend && /home/jiayen/Desktop/pet_project/backend/venv/bin/python cron/energy_decay.py >> /home/jiayen/Desktop/pet_project/backend/cron/energy_decay.log 2>&1
+*/30 * * * * cd /home/jiayen/Desktop/pet_project/backend && /home/jiayen/Desktop/pet_project/backend/venv/bin/python cron/update_leaderboard.py >> /home/jiayen/Desktop/pet_project/backend/cron/leaderboard.log 2>&1
