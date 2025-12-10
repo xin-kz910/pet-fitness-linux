@@ -13,9 +13,32 @@ backend/
   cron/
     energy_decay.py
 """
+# ==========================================================
+# 🚨 緊急修正：強制設定專案根目錄 (必須放在最頂端) 🚨
+# ==========================================================
+import sys
+import os
 
+# 1. 取得腳本的當前目錄 (backend/cron/)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 設定專案根目錄 (backend/)
+project_root = os.path.join(current_dir, '..')
+
+# 3. 將專案根目錄加入 Python 搜尋路徑
+if project_root not in sys.path:
+    sys.path.insert(0, project_root) # 使用 insert(0) 確保優先級
+
+# ==========================================================
+
+
+"""
+每 20 分鐘執行一次：
+- 所有寵物 energy -= 5（不能 < 0）
+... (略) ...
+"""
+
+# 現在，Python 就能找到 app.main 模組了！
 from app.main import SessionLocal, Pet, energy_to_status
-
 
 def run_energy_decay():
     db = SessionLocal()
@@ -54,3 +77,4 @@ def run_energy_decay():
 
 if __name__ == "__main__":
     run_energy_decay()
+
