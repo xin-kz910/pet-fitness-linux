@@ -61,8 +61,8 @@
               ▼
       Nginx Reverse Proxy
               │
- ┌────────────┼───────────┐
- ▼            ▼           ▼
+  ┌───────────┼───────────┐
+  ▼           ▼           ▼
 Backend A  Backend B  Backend C
   │           │           │
   ▼           ▼           ▼
