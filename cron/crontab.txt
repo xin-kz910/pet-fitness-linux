@@ -1,3 +1,13 @@
+chmod +x /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
+
+# 體力下降 (每20分鐘執行一次)
+*/20 * * * * /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh >> /home/jiayen/Desktop/pet_project/backend/cron/energy_decay.log 2>&1
+
+# 排行榜更新 (每30分鐘執行一次)
+*/30 * * * * /home/jiayen/Desktop/pet_project/backend/venv/bin/python /home/jiayen/Desktop/pet_project/backend/cron/update_leaderboard.py >> /home/jiayen/Desktop/pet_project/backend/cron/leaderboard.log 2>&1
+
+---
+
 # 每 20 分鐘：體力自然下降 & 體力為 0 扣分
 */20 * * * * /usr/bin/python3 /home/jiayen/Desktop/pet_project/cron/energy_decay.py >> /home/jiayen/Desktop/pet_project/cron/energy_decay.log 2>&1
 
@@ -30,6 +40,7 @@ chmod 755 /home/jiayen/Desktop
 # 步驟二
 # 手動測試 Cron 命令的精確路徑
 cd /home/jiayen/Desktop/pet_project/backend && /home/jiayen/Desktop/pet_project/backend/venv/bin/python cron/energy_decay.py
+
 
 
 
