@@ -15,6 +15,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # 測試排程與日誌輸出是否正常 (每分鐘執行一次)
 
 * * * * * echo "Cron Test $(date)" >> /tmp/cron_test_global.log 2>&1
+* * * * * /bin/echo "Cron Test - Path Check $(/bin/date)" >> /tmp/cron_test_abs_path.log 2>&1
 # 暫時註解您的 Python 腳本
 # */20 * * * * cd /home/jiayen/Desktop/pet_project/backend && ...
 
@@ -29,6 +30,7 @@ chmod 755 /home/jiayen/Desktop
 # 步驟二
 # 手動測試 Cron 命令的精確路徑
 cd /home/jiayen/Desktop/pet_project/backend && /home/jiayen/Desktop/pet_project/backend/venv/bin/python cron/energy_decay.py
+
 
 
 
