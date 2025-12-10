@@ -1,6 +1,6 @@
 // frontend/js/game_app.js (最終 Web Socket 準備版本 - 點擊遊戲邏輯)
 
-import { getPetStatus } from './api_client.js';
+import { getPetStatus, updatePetSpirit } from './api_client.js';
 import { sendMessage } from './websocket_client.js'; // 引入 WS 發送功能
 import { handleKeyboardInput, startDinoGame, stopDinoGame } from './dino_game.js';
 
@@ -232,6 +232,14 @@ function endGame() {
         
         // FIX 6: 根據新體力值更新圖片
         finalPetImg = getSpiritInfo(newSpirit).statusImg;
+        // ⭐ 把新的體力值寫回 DB
+        try {
+            await updatePetSpirit(newSpirit);
+            console.log('[SOLO] 已將體力值更新到後端：', newSpirit);
+        } catch (err) {
+            console.error('[SOLO] 更新後端體力值失敗：', err);
+            // 失敗的話，至少 localStorage 還是有更新
+        }
         
     } 
     // 處理 BATTLE 模式的結果顯示 (FIX 7)
