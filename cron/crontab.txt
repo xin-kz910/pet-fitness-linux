@@ -49,9 +49,23 @@ cd /home/jiayen/Desktop/pet_project/backend && /home/jiayen/Desktop/pet_project/
 
 
 
+---
 
+rm /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
+nano /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
+```
+#!/bin/bash
 
+# 專案根目錄
+PROJECT_ROOT="/home/jiayen/Desktop/pet_project/backend"
 
+# 1. 進入專案根目錄
+cd $PROJECT_ROOT
 
+# 2. 啟動虛擬環境並執行 Python 腳本 (使用 && 連接更穩健)
+source venv/bin/activate && venv/bin/python cron/energy_decay.py
+```
+chmod +x /home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
+/home/jiayen/Desktop/pet_project/backend/run_cron_decay.sh
 
 
