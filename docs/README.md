@@ -53,7 +53,7 @@
 
 # 3. 系統架構
 
-前端、Nginx、後端 A/B/C、WebSocket A/B/C、資料庫、Raspberry Pi。
+前端、Nginx、後端 A/B/C、WebSocket A/B/C、資料庫、Mediapipe。
 
 ```
      [ Browser Frontend ]
