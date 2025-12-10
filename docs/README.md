@@ -46,7 +46,7 @@
 
 * 偵測玩家是否運動
 * 偵測成功 → 後端更新寵物體力
-* 0～30 需要 2 次運動、30～70 需要 1 次運動
+* 體力0～30 需要 2 次運動、30～70 需要 1 次運動
 * 讓玩家真正「起身動一動」
 
 ---
@@ -79,7 +79,7 @@ Backend A  Backend B  Backend C
 * Backend A/B/C 使用 FastAPI，依 server_id 分流玩家
 * WS A/B/C 處理大廳同步、聊天、對戰
 * PostgreSQL 存玩家、寵物、排行榜
-* Raspberry Pi 偵測玩家動作並回報後端
+* Mediapipe 偵測玩家動作並回報後端
 
 ---
 
@@ -88,7 +88,7 @@ Backend A  Backend B  Backend C
 ###  後端 Backend
 
 * Python + FastAPI
-* SQLite / PostgreSQL
+* PostgreSQL
 * Nginx（反向代理）
 * Cron Job（體力下降、排行榜更新）
 * systemd（常駐服務）
@@ -105,9 +105,7 @@ Backend A  Backend B  Backend C
 
 ### 動作偵測
 
-* Raspberry Pi OS
-* Pi Camera + OpenCV
-* HTTP API 傳送偵測結果
+* Mediapipe
 
 ---
 
@@ -140,21 +138,19 @@ pet-fitness-linux/
 
 # 7. 遇到的挑戰
 
-* 多伺服器之間的 API / WS 架構協同設計
-* WebSocket 即時同步延遲與廣播邏輯
-* Raspberry Pi 動作偵測整合後端流程
-* Cron / systemd 在 Linux 上的服務管理
-* 大廳同步、對戰同步的資料一致性
+* 時間緊迫，所以沒辦法做的太完善
+* 用到沒碰過的技術，摸索時間較長
+* WebSocket 同步問題
+* Raspberry Pi 動作偵測失敗後改成Mediapipe
 
 ---
 
 # 8. 未來展望
 
-* 更多運動類型與更準確的偵測
-* 寵物進化與裝飾系統
-* 多人房間 / 多人對戰模式
-* 後台管理介面
-* 使用 Docker 讓部署更方便、更穩定
+* 加入更多運動類型
+* 寵物進化與個人化外觀
+* 多人協作與多人對戰模式
+* Docker / 雲端部署提升擴充性
 
 ---
 
