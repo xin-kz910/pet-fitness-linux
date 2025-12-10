@@ -1,381 +1,172 @@
-# 統一格式（問 AI 之前可以先貼）
----
+#  就是比狗累 – Just Beagle Lay
+（運動型虛擬寵物系統）
 
-````markdown
-# 🧩 專案統一規格說明（給 AI 看的前置說明，請嚴格遵守）
-
-本專案名稱：**運動型虛擬寵物系統（Linux 期末專題，多伺服器版）**  
-請你在產生任何程式碼 / API 設計 / WebSocket 設計時，**務必遵守以下統一規格**，避免命名不一致造成整合困難。
+> 專題精神：你不動，你的狗比你還累。
+> 玩家需要透過真實運動來維持寵物體力，並進行互動、聊天與對戰的多人遊戲系統。
 
 ---
 
-## 0. 基本設計概念（請 AI 先建立印象）
+# 1. 專案簡介（Overview）
 
-- 有「多伺服器」概念：Server A / Server B / Server C  
-- 前端對外呼叫路徑：
-  - API：`/serverA/api/...`、`/serverB/api/...`、`/serverC/api/...`
-  - WebSocket：`/serverA/ws`、`/serverB/ws`、`/serverC/ws`
-- 後端實際的 API 路徑（在 application 內）**一律寫成**：
-  - `/api/login`、`/api/register`、`/api/pet/status`、`/api/pet/update`、`/api/leaderboard` 等
-  - 也就是說：**多伺服器是由 Nginx 加前綴 `/serverA`，應用程式內部不需要知道這個前綴**
-- 所有與伺服器相關的邏輯，請使用欄位或變數 `server_id`，值為 `"A"`、`"B"` 或 `"C"`。
+「就是比狗累」是一個整合 **Linux 多伺服器架構、WebSocket 即時通訊、
+動作偵測和前後端互動遊戲系統** 的專題作品。
 
----
+玩家可以：
 
-## 1. 命名規則（非常重要，請 AI 一律遵守）
+* 登入系統、選擇伺服器（A/B/C）
+* 在大廳看到所有線上玩家的寵物
+* 與其他玩家聊天、挑戰 1V1 對戰
+* 經營自己的寵物體力（會隨時間下降）
+* 透過辨識系統做「真實運動」或是鍵盤操控來恢復體力
+* 在排行榜中競爭積分
 
-### 1.1 語言與命名風格
-
-- 變數 / 函式 / 欄位名稱：**一律英文**，使用 **snake_case**（例如：`user_id`, `pet_name`, `energy_level`）
-- 類別名稱：使用 **PascalCase**（例如：`User`, `Pet`, `BattleRoom`）
-- 常數：**全大寫 + 底線**（例如：`ENERGY_MIN`, `ENERGY_MAX`, `STATE_SLEEPING`）
-- 資料表名稱：**複數英文小寫**（例如：`users`, `pets`, `battles`, `messages`, `leaderboard`）
-- JSON Key：**snake_case**（例如：`user_id`, `server_id`, `energy`, `status`）
-
-### 1.2 通用欄位命名
-
-請你在設計 DB 或 JSON 時，優先使用以下欄位名稱：
-
-- 使用者相關：
-  - `user_id`（整數或 UUID）
-  - `username`（登入帳號）
-  - `display_name`（顯示名稱，暱稱）
-  - `password_hash`（密碼哈希）
-  - `server_id`（"A" / "B" / "C"）
-
-- 寵物相關：
-  - `pet_id`
-  - `pet_name`
-  - `energy`（0–100）
-  - `status`（"SLEEPING" / "TIRED" / "ACTIVE"）
-
-- 對戰相關：
-  - `battle_id`
-  - `player1_id`
-  - `player2_id`
-  - `player1_score`
-  - `player2_score`
-  - `winner_user_id`
-  - `battle_status`（"PENDING" / "ONGOING" / "FINISHED"）
-
-- 聊天 / 訊息相關：
-  - `message_id`
-  - `from_user_id`
-  - `to_user_id`
-  - `content`
-  - `created_at`
-
-- 排行相關：
-  - `score`
-  - `rank`
-
-- 時間欄位一律使用：
-  - `created_at`
-  - `updated_at`
-  - 型別可用 ISO 字串或 timestamp，但命名不要亂換。
+這是一個結合 **健康、互動與 Linux 架構** 的實作。
 
 ---
 
-## 2. REST API 統一規格
+# 2. 系統特色（Features）
 
-### 2.1 API 基本路徑
+###  遊戲功能
 
-- 應用程式內部的 API 路徑一律以 `/api` 開頭，例如：
-  - `POST /api/register`
-  - `POST /api/login`
-  - `GET  /api/pet/status`
-  - `POST /api/pet/update`
-  - `GET  /api/leaderboard`
-  - `POST /api/battle/invite`
-  - `POST /api/battle/accept`
-  - `GET  /api/battle/history`
+* 多人登入 / 註冊
+* 多伺服器大廳（A/B/C 分別獨立）
+* 隨機寵物位置顯示
+* 即時聊天（群聊＋私訊）
+* 寵物體力系統（精神飽滿／疲累／休眠）
+* 小恐龍跑酷式 1v1 對戰
+* 排行榜（分數自動計算與更新）
 
-- Nginx 會在外面加上 `/serverA`、`/serverB`、`/serverC`，  
-  所以前端實際呼叫為：
-  - `/serverA/api/login`
-  - `/serverB/api/pet/status`
-  - `/serverC/api/leaderboard`  
-  **請 AI 在設計後端程式碼時，不要硬寫 `/serverA`，只寫 `/api/...`。**
+###  寵物體力機制
 
-### 2.2 統一回應格式
+* 體力 0～100
+* 每 20 分鐘自動扣 5 點（Cron Job）
+* 30 以下進入休眠，功能受限
+* 需要透過 **運動偵測** 才能恢復體力
 
-請所有 API 回傳以下格式（除非特別說明）：
+### 運動偵測
 
-```json
-{
-  "success": true,
-  "data": { },
-  "error": null
-}
-````
+* 偵測玩家是否運動
+* 偵測成功 → 後端更新寵物體力
+* 0～30 需要 2 次運動、30～70 需要 1 次運動
+* 讓玩家真正「起身動一動」
 
-錯誤時：
+---
 
-```json
-{
-  "success": false,
-  "data": null,
-  "error": {
-    "code": "SOME_ERROR_CODE",
-    "message": "人類可讀錯誤訊息"
-  }
-}
+# 3. 系統架構（Architecture）
+
+前端、Nginx、後端 A/B/C、WebSocket A/B/C、資料庫、Raspberry Pi。
+
+```
+[ Browser Frontend ]
+         │
+         ▼
+  Nginx Reverse Proxy
+         │
+ ┌───────┼───────────┐
+ ▼       ▼           ▼
+Backend A  Backend B  Backend C
+  │         │           │
+  ▼         ▼           ▼
+ WS A     WS B        WS C
+         │
+         ▼
+     Database
+
 ```
 
-* `error.code` 統一使用 **全大寫 + 底線**，例如：
+### 重點技術
 
-  * `"INVALID_CREDENTIALS"`
-  * `"NOT_ENOUGH_ENERGY"`
-  * `"BATTLE_NOT_FOUND"`
+* 前端透過 Nginx 提供靜態頁面與反向代理
+* Backend A/B/C 使用 FastAPI，依 server_id 分流玩家
+* WS A/B/C 處理大廳同步、聊天、對戰
+* PostgreSQL 存玩家、寵物、排行榜
+* Raspberry Pi 偵測玩家動作並回報後端
 
 ---
 
-## 3. 主要 API 名稱與欄位（請 AI 依照這些命名）
+# 4. 技術與工具
 
-### 3.1 登入 / 註冊
+###  後端 Backend
 
-**POST `/api/register`**
+* Python + FastAPI
+* SQLite / PostgreSQL
+* Nginx（反向代理）
+* Cron Job（體力下降、排行榜更新）
+* systemd（常駐服務）
 
-```json
-{
-  "username": "test_user",
-  "password": "plain_password",
-  "display_name": "玩家暱稱"
-}
+### 即時通訊 WebSocket
+
+* Python websockets
+* 即時同步：大廳玩家位置、聊天訊息、對戰狀態
+
+### 前端 Frontend
+
+* HTML / CSS / JavaScript
+* 與 API / WebSocket 串接互動
+
+### 動作偵測
+
+* Raspberry Pi OS
+* Pi Camera + OpenCV
+* HTTP API 傳送偵測結果
+
+---
+
+# 5. 系統功能流程（User Flow）
+
+1. **登入 / 註冊**
+2. **選擇伺服器（A/B/C）**
+3. **進入大廳** → 看到所有玩家寵物
+4. **與玩家互動：聊天 / 挑戰**
+5. **寵物體力下降 → 休眠通知**
+6. **玩家到鏡頭前做運動**
+7. **偵測成功 → 體力恢復**
+8. **可繼續對戰、聊天和衝排行榜**
+
+---
+
+# 6. 專案結構（簡化版）
+
 ```
-
-**POST `/api/login`**
-
-```json
-{
-  "username": "test_user",
-  "password": "plain_password"
-}
-```
-
-回應（示意）：
-
-```json
-{
-  "success": true,
-  "data": {
-    "user_id": 1,
-    "username": "test_user",
-    "display_name": "玩家暱稱",
-    "server_id": "A",
-    "token": "jwt_or_session_token"
-  },
-  "error": null
-}
+pet-fitness-linux/
+├── backend/            # 三台後端（A/B/C）
+├── ws-server/          # 三台 WebSocket（A/B/C）
+├── frontend/           # 前端頁面
+├── pi-detector/        # 動作偵測（Raspberry Pi）
+├── cron/               # 體力下降 / 排行榜 Job
+└── docs/               # API / WS / 架構文件
 ```
 
 ---
 
-### 3.2 寵物狀態
+# 7. 遇到的挑戰（Challenges）
 
-**GET `/api/pet/status`**
-
-回應 JSON：
-
-```json
-{
-  "success": true,
-  "data": {
-    "pet_id": 1,
-    "pet_name": "MyDog",
-    "energy": 75,
-    "status": "ACTIVE", 
-    "score": 10
-  },
-  "error": null
-}
-```
-
-* `status` 僅允許三種：
-
-  * `"SLEEPING"`（0–30）
-  * `"TIRED"`（30–70）
-  * `"ACTIVE"`（70–100）
+* 多伺服器之間的 API / WS 架構協同設計
+* WebSocket 即時同步延遲與廣播邏輯
+* Raspberry Pi 動作偵測整合後端流程
+* Cron / systemd 在 Linux 上的服務管理
+* 大廳同步、對戰同步的資料一致性
 
 ---
 
-### 3.3 寵物體力更新（Pi 運動恢復）
+# 8. 未來展望（Future Plan）
 
-**POST `/api/pet/update`**
-
-由 Raspberry Pi 呼叫：
-
-```json
-{
-  "user_id": 1,
-  "pet_id": 1,
-  "server_id": "A",
-  "exercise_count": 1
-}
-```
-
-回應：
-
-```json
-{
-  "success": true,
-  "data": {
-    "pet_id": 1,
-    "energy": 100,
-    "status": "ACTIVE"
-  },
-  "error": null
-}
-```
+* 更多運動類型與更準確的偵測
+* 寵物進化與裝飾系統
+* 多人房間 / 多人對戰模式
+* 後台管理介面
+* 使用 Docker 讓部署更方便、更穩定
 
 ---
 
-### 3.4 排行榜
+# 9. 開發團隊（Contributors）
 
-**GET `/api/leaderboard`**
+| 學號        | 姓名  | 分工                       |
+| --------- | --- | ------------------------ |
+| 112213016 | 陳詩穎 |    |
+| 112213018 | 林秀萍 |        |
+| 112213025 | 施淯馨 |        |
+| 112213034 | 郭家言 | |
 
-可接受參數（如有）：
-
-* `limit`（預設 10）
-* `server_id`（可選，預設顯示當前伺服器）
-
-回應：
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "user_id": 1,
-      "display_name": "玩家A",
-      "score": 30,
-      "rank": 1
-    },
-    {
-      "user_id": 2,
-      "display_name": "玩家B",
-      "score": 25,
-      "rank": 2
-    }
-  ],
-  "error": null
-}
-```
-
----
-
-## 4. WebSocket 訊息格式（大廳 / 對戰 / 聊天）
-
-### 4.1 通用封包格式
-
-所有 WebSocket 訊息一律長這樣：
-
-```json
-{
-  "type": "event_name",
-  "server_id": "A",
-  "user_id": 1,
-  "payload": {
-    "...": "..."
-  }
-}
-```
-
-* `type`：事件名稱（例如：`"join_lobby"`, `"chat_message"`, `"battle_update"`）
-* `server_id`：`"A" / "B" / "C"`
-* `payload`：不同事件自己的資料
-
-### 4.2 常用事件名稱（請 AI 優先使用這些）
-
-* 大廳相關：
-
-  * `join_lobby`
-  * `lobby_state`
-  * `player_joined`
-  * `player_left`
-* 聊天相關：
-
-  * `chat_message`
-  * `chat_history`
-* 對戰相關：
-
-  * `battle_invite`
-  * `battle_accept`
-  * `battle_start`
-  * `battle_update`
-  * `battle_result`
-
-**請 AI 不要自己亂發明別的 event name，如果需要新事件，至少保持 snake_case 並附上 `type` 字串。**
-
----
-
-## 5. Raspberry Pi 上報格式（給 AI 的固定規格）
-
-Raspberry Pi 呼叫 API 或 socket 上報運動結果時，一律使用：
-
-```json
-{
-  "user_id": 1,
-  "pet_id": 1,
-  "server_id": "A",
-  "exercise_count": 1,
-  "source": "raspberry_pi"
-}
-```
-
-* `exercise_count`：這次偵測到的運動次數（例如一次跳躍就算 1）
-* `source`：固定字串 `"raspberry_pi"`，方便後端 log
-
----
-
-## 6. 體力與狀態規則（不要改）
-
-* 體力範圍：0–100（整數）
-* 自然下降：每 20 分鐘 -5 點（由 Cron Job 負責）
-* 狀態分段：
-
-  * 0–30：`"SLEEPING"`
-  * 30–70：`"TIRED"`
-  * 70–100：`"ACTIVE"`
-* 體力 = 0：自動 `score -= 1`
-
----
-
-## 7. AI 回覆要求（統一要求）
-
-當我在此專案下詢問任何問題時，請你：
-
-1. **遵守以上命名與格式，不要自創風格**
-2. API 路徑一律使用 `/api/...`（不要手動加 `/serverA`）
-3. JSON 欄位一律使用 snake_case，並盡量使用上面列出的欄位名稱
-4. 若有新增欄位 / event type，請：
-
-   * 使用英文
-   * 使用 snake_case
-   * 同時簡短說明用途
-
----
-
-# （下面這一段，才是我這次真正的問題）
-
-````
-
-> ✅ 用法示範：  
-> 你們之後每個人問 AI 時，可以這樣開頭：
-
-```markdown
-# 🧩 專案統一規格（請先閱讀並遵守）
-
-[貼上上面那整坨規格]
-
----
-
-# 我這次要做的事情：
-
-我是組員 B，要實作 WebSocket Server A 的基礎架構，請幫我用 Python 寫一個簡單版的 ws server：
-- 支援事件 type：join_lobby、chat_message
-- 使用上面定義的 JSON 格式
-- 幫我示範玩家加入大廳與發送聊天訊息的流程
-````
 
 
