@@ -111,7 +111,7 @@ Backend A  Backend B  Backend C
 
 ---
 
-# 5. 系統功能流程（User Flow）
+# 5. 系統功能流程
 
 1. **登入 / 註冊**
 2. **選擇伺服器（A/B/C）**
@@ -124,7 +124,7 @@ Backend A  Backend B  Backend C
 
 ---
 
-# 6. 專案結構（簡化版）
+# 6. 專案結構
 
 ```
 pet-fitness-linux/
@@ -138,7 +138,7 @@ pet-fitness-linux/
 
 ---
 
-# 7. 遇到的挑戰（Challenges）
+# 7. 遇到的挑戰
 
 * 多伺服器之間的 API / WS 架構協同設計
 * WebSocket 即時同步延遲與廣播邏輯
@@ -148,7 +148,7 @@ pet-fitness-linux/
 
 ---
 
-# 8. 未來展望（Future Plan）
+# 8. 未來展望
 
 * 更多運動類型與更準確的偵測
 * 寵物進化與裝飾系統
@@ -158,7 +158,7 @@ pet-fitness-linux/
 
 ---
 
-# 9. 開發團隊（Contributors）
+# 9. 開發團隊
 
 | 學號        | 姓名  | 分工                       |
 | --------- | --- | ------------------------ |
