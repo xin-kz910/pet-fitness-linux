@@ -21,9 +21,11 @@ cat /tmp/cron_test_global.log
 
 # 如果沒有輸出
 sudo chown jiayen:jiayen /home/jiayen/Desktop
+chmod 755 /home/jiayen/Desktop
 
 # 步驟二
 # 手動測試 Cron 命令的精確路徑
 cd /home/jiayen/Desktop/pet_project/backend && /home/jiayen/Desktop/pet_project/backend/venv/bin/python cron/energy_decay.py
+
 
 
