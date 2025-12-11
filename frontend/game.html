@@ -239,6 +239,25 @@
             align-items: center;
         }
 
+        /* ⭐ 按鈕按下去瞬間的效果（不改 JS 就只能做到這個程度） */
+        #rpi-mode-btn:active,
+        #keyboard-mode-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--pixel-black);
+            filter: brightness(1.1);
+            border-color: var(--pixel-orange);
+        }
+        
+        /* ⭐ 按鈕被聚焦（點過後）的效果 */
+        #rpi-mode-btn:focus,
+        #keyboard-mode-btn:focus {
+            outline: none;
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--pixel-black);
+            border-color: var(--pixel-orange);
+        }
+
+
     </style>
 </head>
 <body>
@@ -255,14 +274,21 @@
         <div id="rpi-cam-panel" class="game-panel">
             <h2 class="panel-title" id="rpi-panel-title">即時鏡頭辨識區 (體力補充)</h2>
             <div id="rpi-cam-box" class="pixel-game-box"> 
-                <h3 id="rpi-cam-label">樹莓派影像串流中...</h3>
+                <h3 id="rpi-cam-label">鏡頭載入中，請允許瀏覽器使用攝影機...</h3>
+
+                <!-- ⭐ 新增：前端鏡頭畫面 -->
+                <video id="webcam-video"
+               autoplay
+               playsinline
+               style="width: 100%; max-width: 480px; border: 4px solid black; image-rendering: pixelated;">
+                </video>
 
                 <!-- ⭐ 鍵盤模式用的狗狗預覽（平常隱藏） -->
                 <img id="dog-preview" 
-                    src="./assets/pet-run.png" 
-                    alt="操作示意狗狗"
-                    class="pixel-img"
-                    style="display:none; width: 500px; image-rendering: pixelated;">
+                src="./assets/pet-run.png" 
+                alt="操作示意狗狗"
+                class="pixel-img"
+                style="display:none; width: 500px; image-rendering: pixelated;">
             </div>
         </div>
 
@@ -291,7 +317,7 @@
                 <div style="display: flex; gap: 40px;">
                     <button id="rpi-mode-btn" class="pixel-border-box" 
                         style="padding: 15px 30px; font-size: 1.2em; background-color: var(--pixel-yellow);">
-                        💻 樹莓派鏡頭辨識
+                        💻 鏡頭辨識
                     </button>
                     <button id="keyboard-mode-btn" class="pixel-border-box" 
                         style="padding: 15px 30px; font-size: 1.2em; background-color: var(--pixel-green);">
@@ -311,7 +337,7 @@
                     <img id="opponent-pet-avatar" src="./assets/pet-resting.png" alt="對手寵物" class="pixel-img" style="width: 48px;padding-right: 3px;">
                     <div>
                         <p id="opponent-pet-name-tag" style="margin: 0; font-weight: bold;padding-right: 5px;">對手名稱</p>
-                        <p id="opponent-score" style="margin: 0; color: #cc0066;">分數: 0</p>
+                        <p id="opponent-score" style="margin: 0; color: #cc0066;padding-right: 10px">分數: 0</p>
                     </div>
                 </div>
             </div>
@@ -320,6 +346,12 @@
                 <button id="start-game-btn" class="pixel-border-box">開始運動辨識</button>
             </div>
         </div> </div> </main>
+
+    <!-- 先載入 TensorFlow.js 及姿態偵測模型（用 CDN） -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
     
     <script type="module" src="./js/game_app.js"></script>
 </body>
