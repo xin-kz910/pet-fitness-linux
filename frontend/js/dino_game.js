@@ -50,8 +50,11 @@ let DINO_WIDTH = 80;
 let DINO_HEIGHT = 50;
 
 const JUMP_VELOCITY = -13;
-const GRAVITY = 0.8;
-const GAME_SPEED = 5;
+const GRAVITY = 0.6;
+const GAME_SPEED = 4;
+
+// ⭐ 外部可調整的速度倍率（1 = 原速，<1 = 變慢，>1 = 變快）
+let SPEED_SCALE = 1;
 
 // 主角狀態
 let dino = {
@@ -108,6 +111,14 @@ birdImage.onload = () => {
     birdAspect = birdImage.naturalWidth / birdImage.naturalHeight;
 };
 
+// 控制是否產生空中鳥（由外部決定：RPI 模式關掉，鍵盤模式打開）
+let birdsEnabled = true;
+
+// 外部用來設定是否產生鳥
+export function setBirdsEnabled(enabled) {
+    birdsEnabled = !!enabled;
+}
+
 // 障礙物
 let obstacles = [];
 let animationFrameId = null;
@@ -122,8 +133,8 @@ const MAX_OBSTACLES_ON_SCREEN = 3;
 function createObstacle() {
     const dinoH = DINO_HEIGHT || 60; // 保險用
 
-    // 30% 機率生成鳥，其他是仙人掌
-    const isBird = Math.random() < 0.3;
+    // 只有在 birdsEnabled = true 時才會有鳥；否則全部都是仙人掌
+    const isBird = birdsEnabled && Math.random() < 0.3;
 
     if (isBird) {
         // 🐦 鳥：變大 + 調低，站立一定會撞，蹲下才會躲過
@@ -246,8 +257,9 @@ function updateDino() {
 
 function updateObstacles() {
     for (const obs of obstacles) {
-        const speedFactor = 1 + Math.min(difficultyLevel - 1, 0.8);
-        obs.x -= GAME_SPEED * speedFactor;
+        const difficultySpeed = 1 + Math.min(difficultyLevel - 1, 0.8);
+        const baseSpeed = GAME_SPEED * SPEED_SCALE;
+        obs.x -= baseSpeed * difficultySpeed;
 
         // 加分：完全通過恐龍
         if (!obs.isPassed && obs.x + obs.width < dino.x) {
@@ -266,10 +278,9 @@ function updateObstacles() {
         }
     }
 
-    // 移除超出畫面的障礙
+    // 下面維持不變...
     obstacles = obstacles.filter(o => o.x + o.width > 0);
 
-    // 產生新障礙物（難度隨時間上升）
     gameFrame++;
     const baseInterval   = 100;
     const spawnInterval  = Math.max(55, baseInterval - difficultyLevel * 8);
@@ -281,7 +292,6 @@ function updateObstacles() {
         gameFrame = 0;
     }
 
-    // 每隔一段時間稍微提高難度
     difficultyFrameCounter++;
     if (difficultyFrameCounter >= 300) {
         difficultyLevel += 0.4;
@@ -462,3 +472,41 @@ export function handleKeyboardInput(event) {
         }
     }
 }
+
+// ⭐ 給「外部輸入」用的跳躍函式（例如：鏡頭偵測到跳）
+export function jumpByExternalInput() {
+    if (!window.game_state || !window.game_state.isRunning() || dino.isDead) return;
+
+    if (!dino.isJumping && !dino.isDucking) {
+        dino.isJumping = true;
+        dino.velocityY = JUMP_VELOCITY;
+        dogPose = 'jump';
+    }
+}
+
+// ⭐ 給「外部輸入」用的蹲下函式（例如：鏡頭偵測到蹲）
+export function duckByExternalInput() {
+    if (!window.game_state || !window.game_state.isRunning() || dino.isDead) return;
+
+    if (!dino.isJumping) {
+        dino.isDucking = true;
+        dogPose = 'duck';
+
+        // 簡單設定 300ms 之後自動站起來
+        setTimeout(() => {
+            dino.isDucking = false;
+            dogPose = 'run';
+        }, 300);
+    }
+}
+
+// ⭐ 外部控制遊戲速度倍率（例如：鏡頭模式 1.0、鍵盤模式 0.7）
+export function setGameSpeedScale(scale) {
+    if (typeof scale === 'number' && scale > 0) {
+        SPEED_SCALE = scale;
+    } else {
+        SPEED_SCALE = 1; // 給個保險
+    }
+}
+
+

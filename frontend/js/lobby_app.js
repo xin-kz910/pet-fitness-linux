@@ -25,6 +25,7 @@ const logoutBtn = document.getElementById('logout-btn');
 const petInfoCard = document.getElementById('pet-info-card');
 const targetPetAvatar = document.getElementById('target-pet-avatar');
 const targetPetNameTag = document.getElementById('target-pet-name-tag');
+
 const targetPetStatus = document.getElementById('target-pet-status');
 const actionChatBtn = document.getElementById('action-chat-btn');
 const actionBattleBtn = document.getElementById('action-battle-btn');
@@ -51,6 +52,7 @@ let currentMyUserId = null;
 let allPlayers = {}; 
 
 const PET_SPRITES = {
+
     idle: './assets/pet-lobby.png',
     up: './assets/pet-up.png',
     down: './assets/pet-down.png',
@@ -85,8 +87,17 @@ function applyMapByServer(serverId) {
 // [修正重點] 更新鏡頭時，必須強制更新所有其他玩家的螢幕位置
 function updateCamera(worldX, worldY) {
     const lobbyRect = lobbyAreaEl.getBoundingClientRect();
-    const worldWidth = worldLayerEl.scrollWidth || worldLayerEl.offsetWidth;
-    const worldHeight = worldLayerEl.scrollHeight || worldLayerEl.offsetHeight;
+    // ⭕ 確保不會是 0，至少用大廳的大小當 fallback
+    const worldWidth =
+        worldLayerEl.scrollWidth ||
+        worldLayerEl.offsetWidth ||
+        lobbyRect.width ||
+        1;
+    const worldHeight =
+        worldLayerEl.scrollHeight ||
+        worldLayerEl.offsetHeight ||
+        lobbyRect.height ||
+        1;
 
     const worldPX = (worldX / WORLD_WIDTH) * worldWidth;
     const worldPY = (worldY / WORLD_HEIGHT) * worldHeight;
@@ -113,8 +124,17 @@ function updateCamera(worldX, worldY) {
 }
 
 function updateMyPetScreenPosition(worldX, worldY) {
-    const worldWidth = worldLayerEl.scrollWidth || worldLayerEl.offsetWidth;
-    const worldHeight = worldLayerEl.scrollHeight || worldLayerEl.offsetHeight;
+    const lobbyRect = lobbyAreaEl.getBoundingClientRect();
+    const worldWidth =
+        worldLayerEl.scrollWidth ||
+        worldLayerEl.offsetWidth ||
+        lobbyRect.width ||
+        1;
+    const worldHeight =
+        worldLayerEl.scrollHeight ||
+        worldLayerEl.offsetHeight ||
+        lobbyRect.height ||
+        1;
     const worldPX = (worldX / WORLD_WIDTH) * worldWidth;
     const worldPY = (worldY / WORLD_HEIGHT) * worldHeight;
     const screenX = worldPX - cameraOffsetX;
@@ -123,11 +143,21 @@ function updateMyPetScreenPosition(worldX, worldY) {
     const petHeight = myPetEl.offsetHeight || 110;
     myPetEl.style.left = `${screenX - petWidth / 2}px`;
     myPetEl.style.top = `${screenY - petHeight}px`;
+
 }
 
 function updateOtherPetScreenPosition(petEl, worldX, worldY) {
-    const worldWidth = worldLayerEl.scrollWidth || worldLayerEl.offsetWidth;
-    const worldHeight = worldLayerEl.scrollHeight || worldLayerEl.offsetHeight;
+    const lobbyRect = lobbyAreaEl.getBoundingClientRect();
+    const worldWidth =
+        worldLayerEl.scrollWidth ||
+        worldLayerEl.offsetWidth ||
+        lobbyRect.width ||
+        1;
+    const worldHeight =
+        worldLayerEl.scrollHeight ||
+        worldLayerEl.offsetHeight ||
+        lobbyRect.height ||
+        1;
     const worldPX = (worldX / WORLD_WIDTH) * worldWidth;
     const worldPY = (worldY / WORLD_HEIGHT) * worldHeight;
     // 使用當前的 cameraOffsetX, cameraOffsetY
@@ -152,11 +182,30 @@ function updateSpiritBadge(spirit) {
     else petLevelEl.classList.add('spirit-low');
 }
 
+// ⭐⭐ 新增：直接讀 Lobby 左上角「狀態：80 (飽滿)」裡面的那個 80
+function getCurrentLobbySpirit() {
+    if (!petLevelEl) return 50;
+    const text = petLevelEl.textContent || '';   // 例如 "狀態：80 (飽滿)"
+    const match = text.match(/(\d+)/);           // 抓出第一個數字
+    if (!match) return 50;
+
+    const n = Number(match[1]);
+    if (Number.isNaN(n)) return 50;
+    return n;  // 這就是畫面上看到的那個數字
+}
+
+function normalizeScore(value) {
+    const n = Number(value);
+    if (Number.isNaN(n) || n < 0) return 0;
+    return n;
+}
+
 // UI 輔助函式
 function closeChatBox() { chatBox.style.display = 'none'; commRequestBadge.style.bottom = '20px'; commRequestBadge.style.left = '20px'; }
 function closeGlobalModal() { globalModalOverlay.style.display = 'none'; actionBattleBtn.disabled = false; actionChatBtn.disabled = false; modalStatusText.style.fontSize = '24px'; modalActionsArea.style.justifyContent = 'space-around'; modalCloseBtn.onclick = null; modalCloseBtn.style.display = 'none'; }
 function showCustomAlert(title, message, callback = () => {}) { modalHeader.textContent = title; modalStatusText.textContent = message; modalStatusText.style.fontSize = '16px'; modalActionsArea.innerHTML = `<button id="alert-ok-btn" class="pixel-button" style="width: 150px; background-color: var(--pixel-blue);">確認</button>`; modalActionsArea.style.justifyContent = 'center'; globalModalOverlay.style.display = 'flex'; document.getElementById('alert-ok-btn').onclick = () => { closeGlobalModal(); callback(); }; }
 function showCustomConfirm(title, message, onConfirm, onCancel = () => {}) { modalHeader.textContent = title; modalStatusText.textContent = message; modalStatusText.style.fontSize = '16px'; modalActionsArea.innerHTML = `<button id="confirm-ok-btn" class="pixel-button" style="width: 150px; background-color: var(--pixel-green);">確定</button><button id="confirm-cancel-btn" class="pixel-button" style="width: 150px; background-color: var(--pixel-red);">取消</button>`; modalActionsArea.style.justifyContent = 'space-around'; globalModalOverlay.style.display = 'flex'; document.getElementById('confirm-ok-btn').onclick = () => { closeGlobalModal(); onConfirm(); }; document.getElementById('confirm-cancel-btn').onclick = () => { closeGlobalModal(); onCancel(); }; }
+
 
 function showBattleCountdown(opponentName, onTimeout) { 
     modalHeader.textContent = `⚔️ 正在等待 ${opponentName} 接受對戰...`;
@@ -248,6 +297,7 @@ function openChatWindow(name, id, isAccepted) {
     }
 }
 
+
 function addChatMessage(fromId, toId, content) {
     const isMine = fromId === currentMyUserId;
     const fromPlayer = allPlayers[fromId];
@@ -300,43 +350,75 @@ function getOrCreateOtherPet(userId, displayName, initialX, initialY) {
 
 function handlePetClick(e) {
     const petAvatar = e.target.closest('.pet-avatar');
-    petInfoCard.style.display = 'none'; closeChatBox(); closeGlobalModal();
-    document.querySelectorAll('.pet-avatar.selected').forEach((el) => el.classList.remove('selected'));
+
+    // 先收掉各種浮動 UI
+    petInfoCard.style.display = 'none';
+    closeChatBox();
+    closeGlobalModal();
+
+    // 取消其他已選取的寵物高亮
+    document.querySelectorAll('.pet-avatar.selected')
+        .forEach((el) => el.classList.remove('selected'));
+
     if (!petAvatar) return;
+
     petAvatar.classList.add('selected');
-    
+
+    // 計算資訊卡位置（只在點別人時會真的顯示）
     const rect = petAvatar.getBoundingClientRect();
     const CARD_WIDTH = 180;
     petInfoCard.style.left = `${rect.left + window.scrollX + rect.width / 2 - CARD_WIDTH / 2}px`;
     petInfoCard.style.top = `${rect.top + window.scrollY - petInfoCard.offsetHeight - 10}px`;
-    
-    const clickedUserId = petAvatar.getAttribute('data-user-id') ? Number(petAvatar.getAttribute('data-user-id')) : currentMyUserId;
+
+    // 透過 data-user-id 判斷這隻狗屬於誰，沒有的話視為自己
+    const clickedUserIdAttr = petAvatar.getAttribute('data-user-id');
+    const clickedUserId = clickedUserIdAttr
+        ? Number(clickedUserIdAttr)
+        : currentMyUserId;
+
     const playerState = allPlayers[clickedUserId] || {};
 
-    if (clickedUserId === currentMyUserId) {
-        // 點擊自己
-        // 暫時不處理單人遊戲跳轉，保持在 Lobby
-        // localStorage.setItem('game_mode', 'solo'); localStorage.setItem('my_spirit_value', localStorage.getItem('my_spirit_value') || 85); window.location.href = 'game.html';
-    } else {
-        // 點擊其他玩家
-        targetUserId = clickedUserId; 
-        targetPetName = playerState.display_name || `玩家 ${targetUserId}`;
-        
-        const spiritValue = playerState.energy || 50; 
-        const scoreValue = playerState.score || 0;
-        const { statusName } = getSpiritInfo(spiritValue);
-        
-        targetPetNameTag.textContent = targetPetName; 
-        targetPetStatus.innerHTML = `精神狀態: ${spiritValue} (${statusName})<br>積分: ${scoreValue} Pts`; 
-        targetPetAvatar.src = PET_SPRITES.idle; // 這裡可以根據 pet_id 顯示特定寵物圖片
-        
-        // 檢查自己的狀態是否允許發起對戰/聊天
-        const myEnergy = Number(localStorage.getItem('my_spirit_value') || 50);
-        actionBattleBtn.disabled = myEnergy < 70;
-        actionChatBtn.disabled = myEnergy <= 30;
+    // 判斷是不是自己（兩種條件都支援，避免 HTML / JS 任一邊改動）
+    const isSelf =
+        clickedUserId === currentMyUserId ||
+        petAvatar.id === 'my-pet';
 
-        petInfoCard.style.display = 'block';
-    }
+    if (isSelf) {
+    // ✅ 點擊自己：進入單人遊戲補體力
+    console.log('點擊自己，進入體力補充。');
+
+
+    // ⭐ 直接讀 Lobby 左上角現在顯示的體力值
+    const myEnergy = getCurrentLobbySpirit();
+
+    // ⭐ 專門給 game.html 用的「這次進場體力」
+    localStorage.setItem('game_mode', 'solo');
+    localStorage.setItem('game_start_spirit', String(myEnergy));
+
+    window.location.href = 'game.html';
+    return;
+	}
+
+
+    // ===== 點擊其他玩家 =====
+    targetUserId = clickedUserId;
+    targetPetName = playerState.display_name || `玩家 ${targetUserId}`;
+
+    const spiritValue = playerState.energy || 50;
+    const scoreValue = playerState.score || 0;
+    const { statusName } = getSpiritInfo(spiritValue);
+
+    targetPetNameTag.textContent = targetPetName;
+    targetPetStatus.innerHTML =
+        `精神狀態: ${spiritValue} (${statusName})<br>積分: ${scoreValue} Pts`;
+    targetPetAvatar.src = PET_SPRITES.idle; // 之後可依 pet_id 換圖
+
+    // 檢查自己體力是否能聊天 / 對戰
+    const myEnergy = Number(localStorage.getItem('my_spirit_value') || 50);
+    actionBattleBtn.disabled = myEnergy < 70;
+    actionChatBtn.disabled = myEnergy <= 30;
+
+    petInfoCard.style.display = 'block';
 }
 
 actionChatBtn.addEventListener('click', () => { 
@@ -381,6 +463,7 @@ function updateMovement() {
     
     myWorldX = Math.max(0, Math.min(WORLD_WIDTH, myWorldX)); 
     myWorldY = Math.max(0, Math.min(WORLD_HEIGHT, myWorldY));
+
     
     setPetSprite(newDirection);
     myPetEl.dataset.worldX = myWorldX; 
@@ -401,8 +484,12 @@ function updateLeaderboard() {
     
     // 轉成 Array 並排序，依據 score 降序
     const sortedPlayers = Object.values(allPlayers)
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 5); // 取前5名
+		.map(p => ({
+			...p,
+			score: normalizeScore(p.score),
+		}))
+		.sort((a, b) => b.score - a.score)
+		.slice(0, 5);
 
     if (sortedPlayers.length === 0) {
         leaderboardListEl.innerHTML = '<li>尚無資料</li>';
@@ -421,49 +508,112 @@ function updateLeaderboard() {
     });
 }
 
-// WS 回呼處理器
 function handleLobbyState(msg) {
     const myId = currentMyUserId;
     const players = msg.payload.players || [];
-    
-    // [修正] 更新全域玩家列表並渲染排行榜
+
+    // 1. 更新 allPlayers & 自己的狀態 / 積分
     allPlayers = {};
-    players.forEach(p => {
+        players.forEach((p) => {
         allPlayers[p.user_id] = p;
-        // 更新自己的狀態
-        if (p.user_id === myId) {
-            localStorage.setItem('my_spirit_value', String(p.energy || 50));
-            const { statusName } = getSpiritInfo(p.energy || 50);
-            petLevelEl.textContent = `狀態：${p.energy || 50} (${statusName})`;
-            updateSpiritBadge(p.energy || 50);
-            if (playerScoreEl) playerScoreEl.textContent = `積分：${p.score || 0} Pts`;
+
+                if (p.user_id === myId) {
+            // ====== 體力（沿用你原本的邏輯） ======
+            const backendEnergy = (typeof p.energy === 'number') ? p.energy : 50;
+
+            const localSpiritRaw = localStorage.getItem('my_spirit_value');
+            let localSpirit = Number(localSpiritRaw);
+            if (Number.isNaN(localSpirit)) {
+                localSpirit = null;
+            }
+
+            const energy =
+                (localSpirit !== null && localSpirit > backendEnergy)
+                    ? localSpirit
+                    : backendEnergy;
+
+            const { statusName } = getSpiritInfo(energy);
+
+            localStorage.setItem('my_spirit_value', String(energy));
+            petLevelEl.textContent = `狀態：${energy} (${statusName})`;
+            updateSpiritBadge(energy);
+            allPlayers[myId].energy = energy;
+
+            // ====== 積分（⭐ 本機與後端取最大值，且不低於 0） ======
+			const backendScore = normalizeScore(p.score);
+			const localScoreRaw = localStorage.getItem('my_total_score');
+			let localScore = Number(localScoreRaw);
+			if (Number.isNaN(localScore)) {
+
+				localScore = null;
+			}
+
+			let finalScore;
+			if (localScore !== null && localScore > backendScore) {
+				finalScore = localScore;
+			} else {
+				finalScore = backendScore;
+			}
+			finalScore = normalizeScore(finalScore);
+
+			// 更新 UI + localStorage + allPlayers
+			if (playerScoreEl) {
+				playerScoreEl.textContent = `積分：${finalScore} Pts`;
+			}
+			localStorage.setItem('my_total_score', String(finalScore));
+			allPlayers[myId].score = finalScore;
+
+
+            
         }
+
     });
+
     updateLeaderboard();
 
-    // 渲染其他玩家
+    // 2. 用「伺服器的座標」決定「我自己的世界座標 & 鏡頭」
+    const me = players.find(p => p.user_id === myId);
+    if (me) {
+        myWorldX = Number(me.x ?? WORLD_WIDTH / 2);
+        myWorldY = Number(me.y ?? WORLD_HEIGHT / 2);
+
+        myPetEl.dataset.worldX = myWorldX;
+        myPetEl.dataset.worldY = myWorldY;
+
+        updateCamera(myWorldX, myWorldY);
+        updateMyPetScreenPosition(myWorldX, myWorldY);
+    }
+
+    // 3. 清掉已下線的寵物
     const onlineUserIds = new Set(players.map(p => p.user_id));
-    Object.keys(otherPets).forEach(uid => {
+    Object.keys(otherPets).forEach((uid) => {
         if (!onlineUserIds.has(Number(uid))) {
             otherPets[uid].el.remove();
             delete otherPets[uid];
         }
     });
 
+    // 4. 依伺服器給的座標，畫出「其他玩家」的位置
     players.forEach((p) => {
         const uid = Number(p.user_id);
         if (!uid || uid === myId) return;
-        const petEl = getOrCreateOtherPet(uid, p.display_name, Number(p.x), Number(p.y));
-        otherPets[uid].x = Number(p.x || WORLD_WIDTH / 2);
-        otherPets[uid].y = Number(p.y || WORLD_HEIGHT / 2);
-        updateOtherPetScreenPosition(petEl, otherPets[uid].x, otherPets[uid].y);
+
+        const worldX = Number(p.x ?? WORLD_WIDTH / 2);
+        const worldY = Number(p.y ?? WORLD_HEIGHT / 2);
+
+        const petEl = getOrCreateOtherPet(uid, p.display_name, worldX, worldY);
+        otherPets[uid].x = worldX;
+        otherPets[uid].y = worldY;
+
+        updateOtherPetScreenPosition(petEl, worldX, worldY);
     });
 
-    // 初始進入大廳時，校正鏡頭和我的位置
-    if (myPetEl.dataset.worldX && myPetEl.dataset.worldY) {
-        updateCamera(Number(myPetEl.dataset.worldX), Number(myPetEl.dataset.worldY));
-        updateMyPetScreenPosition(Number(myPetEl.dataset.worldX), Number(myPetEl.dataset.worldY));
-    }
+    // 🚫 不要再用舊的這段「dataset.worldX/worldY 再校正一次」
+    //    因為我們已經在上面用伺服器座標做過了
+    // if (myPetEl.dataset.worldX && myPetEl.dataset.worldY) {
+    //     updateCamera(Number(myPetEl.dataset.worldX), Number(myPetEl.dataset.worldY));
+    //     updateMyPetScreenPosition(Number(myPetEl.dataset.worldX), Number(myPetEl.dataset.worldY));
+    // }
 }
 
 function handlePlayerJoined(msg) {
@@ -471,15 +621,22 @@ function handlePlayerJoined(msg) {
     const player = msg.payload.player;
     const uid = Number(player.user_id);
     
-    // [修正] 新增玩家並更新排行榜
     allPlayers[uid] = player;
     updateLeaderboard();
 
     if (!uid || uid === myId) return;
-    const petEl = getOrCreateOtherPet(uid, player.display_name, Number(player.x), Number(player.y));
-    otherPets[uid].x = Number(player.x || WORLD_WIDTH / 2);
-    otherPets[uid].y = Number(player.y || WORLD_HEIGHT / 2);
-    updateOtherPetScreenPosition(petEl, otherPets[uid].x, otherPets[uid].y);
+
+    const px = (typeof player.x === 'number' && !Number.isNaN(player.x))
+        ? player.x
+        : WORLD_WIDTH / 2;
+    const py = (typeof player.y === 'number' && !Number.isNaN(player.y))
+        ? player.y
+        : WORLD_HEIGHT / 2;
+
+    const petEl = getOrCreateOtherPet(uid, player.display_name, px, py);
+    otherPets[uid].x = px;
+    otherPets[uid].y = py;
+    updateOtherPetScreenPosition(petEl, px, py);
 }
 
 function handlePlayerLeft(msg) {
@@ -493,6 +650,7 @@ function handlePlayerLeft(msg) {
         delete otherPets[uid];
     }
     updateLeaderboard();
+
     if (targetUserId === uid) {
         petInfoCard.style.display = 'none';
         closeChatBox();
@@ -507,19 +665,39 @@ function handlePetStateUpdate(msg) {
     allPlayers[uid] = { ...allPlayers[uid], ...player };
     updateLeaderboard();
 
-    if (uid === currentMyUserId) {
-        // 更新自己的狀態
-        localStorage.setItem('my_spirit_value', String(player.energy || 50));
-        const { statusName } = getSpiritInfo(player.energy || 50);
-        petLevelEl.textContent = `狀態：${player.energy || 50} (${statusName})`;
-        updateSpiritBadge(player.energy || 50);
-        if (playerScoreEl) playerScoreEl.textContent = `積分：${player.score || 0} Pts`;
+        if (uid === currentMyUserId) {
+        // ===== 體力 =====
+        const energy = player.energy || 50;
+        localStorage.setItem('my_spirit_value', String(energy));
+        const { statusName } = getSpiritInfo(energy);
+        petLevelEl.textContent = `狀態：${energy} (${statusName})`;
+        updateSpiritBadge(energy);
+
+        // ===== 積分：後端推來的 vs 本地，取最大值，且不低於 0 =====
+		const backendScore = normalizeScore(player.score);
+		const localScoreRaw = localStorage.getItem('my_total_score');
+		let localScore = Number(localScoreRaw);
+		if (Number.isNaN(localScore)) {
+			localScore = 0;
+		}
+
+		let finalScore = Math.max(backendScore, localScore);
+		finalScore = normalizeScore(finalScore);
+
+		if (playerScoreEl) {
+			playerScoreEl.textContent = `積分：${finalScore} Pts`;
+		}
+		localStorage.setItem('my_total_score', String(finalScore));
+		allPlayers[uid].score = finalScore;
+
 
     } else {
         // 更新目標玩家狀態卡片（如果正在顯示）
         if (targetUserId === uid && petInfoCard.style.display === 'block') {
             const { statusName } = getSpiritInfo(player.energy || 50);
-            targetPetStatus.innerHTML = `精神狀態: ${player.energy || 50} (${statusName})<br>積分: ${player.score || 0} Pts`;
+            const safeScore = normalizeScore(player.score);
+			targetPetStatus.innerHTML =
+				`精神狀態: ${player.energy || 50} (${statusName})<br>積分: ${safeScore} Pts`;
         }
     }
 }
@@ -529,17 +707,23 @@ function handleOtherPetMoved(msg) {
     const uid = Number(player.user_id);
     if (uid === currentMyUserId) return;
 
-    // 更新資料 (僅位置)
+    const px = (typeof player.x === 'number' && !Number.isNaN(player.x))
+        ? player.x
+        : (allPlayers[uid]?.x ?? WORLD_WIDTH / 2);
+    const py = (typeof player.y === 'number' && !Number.isNaN(player.y))
+        ? player.y
+        : (allPlayers[uid]?.y ?? WORLD_HEIGHT / 2);
+
     if (allPlayers[uid]) {
-        allPlayers[uid].x = player.x;
-        allPlayers[uid].y = player.y;
+        allPlayers[uid].x = px;
+        allPlayers[uid].y = py;
     }
 
-    // 確保寵物 DOM 存在
-    const petEl = getOrCreateOtherPet(uid, (allPlayers[uid] ? allPlayers[uid].display_name : `Player${uid}`), player.x, player.y);
-    otherPets[uid].x = Number(player.x);
-    otherPets[uid].y = Number(player.y);
-    updateOtherPetScreenPosition(petEl, otherPets[uid].x, otherPets[uid].y);
+    const name = allPlayers[uid] ? allPlayers[uid].display_name : `Player${uid}`;
+    const petEl = getOrCreateOtherPet(uid, name, px, py);
+    otherPets[uid].x = px;
+    otherPets[uid].y = py;
+    updateOtherPetScreenPosition(petEl, px, py);
 }
 
 // 聊天與對戰回呼
@@ -568,6 +752,7 @@ function handleChatApproved(msg) {
         // 如果是目標，開啟或更新聊天室為已同意狀態
         openChatWindow(approvedName, approvedId, true);
         showCustomAlert('通訊成功', `您現在可以與 ${approvedName} 聊天了！`);
+
     } else if (approvedId !== currentMyUserId) {
         // 提醒其他情況下的同意
         showCustomAlert('通訊成功', `${approvedName} 已同意您的通訊邀請！`);
@@ -612,46 +797,106 @@ function handleBattleStart(msg) {
 
     const { battle_id, player1_id, player2_id } = msg.payload;
     const opponentId = player1_id === currentMyUserId ? player2_id : player1_id;
-    const opponentName = allPlayers[opponentId] ? allPlayers[opponentId].display_name : `玩家 ${opponentId}`;
-    
-    showCustomAlert('🎉 對戰開始', `與 ${opponentName} 的對戰準備中！`, () => {
-        // 設定遊戲模式和對手資訊，並跳轉
-        localStorage.setItem('game_mode', 'battle');
-        localStorage.setItem('current_battle_id', battle_id);
-        localStorage.setItem('opponent_id', opponentId);
-        localStorage.setItem('opponent_name', opponentName);
-        // 跳轉到 game.html
-        window.location.href = 'game.html';
-    });
+    const opponentName = allPlayers[opponentId]
+        ? allPlayers[opponentId].display_name
+        : `玩家 ${opponentId}`;
+
+    showCustomAlert(
+        '🎉 對戰開始',
+        `與 ${opponentName} 的對戰準備中！\n請點擊「確認」開始準備。`,
+        () => {
+            // ✅ 不要直接跳 game.html，只告訴伺服器「我準備好了」
+            sendMessage('battle_ready', { battle_id });
+            console.log('[WS] 已送出 battle_ready', battle_id);
+        }
+    );
 }
+
+function handleBattleGo(msg) {
+    const { battle_id, player1_id, player2_id } = msg.payload;
+    const opponentId = player1_id === currentMyUserId ? player2_id : player1_id;
+    const opponentName = allPlayers[opponentId]
+        ? allPlayers[opponentId].display_name
+        : `玩家 ${opponentId}`;
+
+    console.log('[WS] 收到 battle_go，雙方都準備好了，開始跳轉遊戲畫面');
+
+    // ⭐ 這一場對戰進場時的體力 = 當下 Lobby 顯示的值
+    const myEnergy = getCurrentLobbySpirit();
+    localStorage.setItem('game_start_spirit', String(myEnergy));
+	updateSpiritBadge(myEnergy);
+	
+	// ✅ 這裡才真正設定模式 & 跳轉
+    localStorage.setItem('game_mode', 'battle');
+    localStorage.setItem('current_battle_id', battle_id);
+    localStorage.setItem('opponent_id', opponentId);
+    localStorage.setItem('opponent_name', opponentName);
+
+    window.location.href = 'game.html';
+}
+
 
 function handleBattleResult(msg) {
-    // 戰鬥結果的處理通常在 game.html，但在 lobby 收到可能是對方斷線
-    // 這裡只做提示
-    const { winner_user_id, player1_score, player2_score, player1_id, player2_id } = msg.payload;
+    const { 
+        winner_user_id, 
+        player1_score, 
+        player2_score, 
+        player1_id, 
+        player2_id,
+        winner_points,
+        loser_points
+    } = msg.payload;
+
     const opponentId = player1_id === currentMyUserId ? player2_id : player1_id;
-    const opponentName = allPlayers[opponentId] ? allPlayers[opponentId].display_name : `玩家 ${opponentId}`;
-    
-    closeGlobalModal(); // 關閉所有可能的對戰邀請/等待中 Modal
+    const opponentName = allPlayers[opponentId] 
+        ? allPlayers[opponentId].display_name 
+        : `玩家 ${opponentId}`;
+
+    closeGlobalModal(); // 關掉可能存在的 modal
+
+    let myGain = 0;
+    let oppGain = 0;
 
     if (winner_user_id === currentMyUserId) {
-        showCustomAlert('恭喜！', `您贏了與 ${opponentName} 的對戰！`);
+        // 我是贏家
+        myGain  = winner_points;
+        oppGain = loser_points;
+        showCustomAlert(
+            '恭喜！',
+            `您贏了與 ${opponentName} 的對戰！\n` +
+            `本場遊戲得分：${Math.max(player1_score, player2_score)} 分\n` +
+            `本次獲得：+${myGain} Pts`
+        );
     } else if (winner_user_id === opponentId) {
-        showCustomAlert('可惜！', `您輸了與 ${opponentName} 的對戰！`);
+        // 我是輸家
+        myGain  = loser_points;
+        oppGain = winner_points;
+        showCustomAlert(
+            '可惜！',
+            `您輸了與 ${opponentName} 的對戰。\n` +
+            `本場您的遊戲得分：${currentMyUserId === player1_id ? player1_score : player2_score} 分\n` +
+            `本次獲得：+${myGain} Pts（對手的一半）`
+        );
     } else {
-        // 可能是平手或無結果
-        showCustomAlert('對戰結束', `與 ${opponentName} 的對戰已結束。`);
+        showCustomAlert(
+            '對戰結束', 
+            `與 ${opponentName} 的對戰已結束。`
+        );
     }
 
-    // 重新載入寵物狀態，以取得更新後的積分
-    setTimeout(initializeLobby, 1000); 
+    // 重新載入寵物狀態（包含更新後的總積分）
+    setTimeout(initializeLobby, 1000);
 }
+
+
+
 
 
 // 初始化邏輯
 async function initializeLobby() {
     const token = localStorage.getItem('user_token');
     const selected_server_id = localStorage.getItem('selected_server_id');
+
     const myUserIdRaw = localStorage.getItem('user_id');
 
     if (!token || !selected_server_id || !myUserIdRaw) {
@@ -666,28 +911,70 @@ async function initializeLobby() {
 
     let myPetData = {};
     try {
-        // [修正] 從 API 取得初始資料 (含 score)
+                // 從 API 取得初始資料 (含 score)
         myPetData = await getPetStatus(currentMyUserId);
-        const spiritValue = myPetData.energy || 50;
-        const scoreValue = myPetData.score || 0;
+
+        // 1️⃣ 後端回來的體力（當作「基準值」）
+        const backendSpirit = (typeof myPetData.energy === 'number') ? myPetData.energy : 50;
+
+        // 2️⃣ 看 localStorage 有沒有「更新的 my_spirit_value」
+        const localSpiritRaw = localStorage.getItem('my_spirit_value');
+        let localSpirit = Number(localSpiritRaw);
+        if (Number.isNaN(localSpirit)) {
+            localSpirit = null;
+        }
+
+        // 3️⃣ 決定真正要顯示的精神值：
+        const spiritValue =
+            (localSpirit !== null && localSpirit > backendSpirit)
+                ? localSpirit
+                : backendSpirit;
+
         const { statusName } = getSpiritInfo(spiritValue);
         
         petNameEl.textContent = `寵物：${myPetData.pet_name}`;
         petLevelEl.textContent = `狀態：${spiritValue} (${statusName})`;
         updateSpiritBadge(spiritValue);
         myPetNameTagEl.textContent = localStorage.getItem('display_name') || '我';
-        
-        // 顯示自己的分數
-        if (playerScoreEl) {
-            playerScoreEl.textContent = `積分：${scoreValue} Pts`;
-        }
 
-        // 更新 local storage
-        localStorage.setItem('my_spirit_value', String(spiritValue));
-        
-        // 將 API 資料帶入 WS 初始資料
-        myPetData.score = scoreValue; 
-        myPetData.display_name = localStorage.getItem('display_name');
+		// ====== ⭐ 分數：後端 vs localStorage，取最新的 ======
+		const backendScore = normalizeScore(myPetData.score);
+
+		const localScoreRaw = localStorage.getItem('my_total_score');
+		let localScore = null;
+		if (localScoreRaw !== null) {
+			const parsed = Number(localScoreRaw);
+			if (!Number.isNaN(parsed)) {
+				localScore = parsed;
+			}
+		}
+
+		// 如果本機有紀錄，且比後端的大，就用本機的（例如剛打完對戰）
+		let finalScore;
+		if (localScore !== null && localScore > backendScore) {
+			finalScore = localScore;
+		} else {
+			finalScore = backendScore;
+		}
+
+		// 再保險一次：下限設 0
+		finalScore = normalizeScore(finalScore);
+
+		// 顯示自己的分數
+		if (playerScoreEl) {
+			playerScoreEl.textContent = `積分：${finalScore} Pts`;
+		}
+
+		// 4️⃣ 把最後決定的 spiritValue / score 寫回 localStorage
+		localStorage.setItem('my_spirit_value', String(spiritValue));
+		localStorage.setItem('my_total_score', String(finalScore));
+
+		// 5️⃣ 讓要傳給 WebSocket 的初始資料也帶「最新的」體力/積分
+		myPetData.energy = spiritValue;
+		myPetData.score = finalScore;
+		myPetData.display_name = localStorage.getItem('display_name');
+
+
 
     } catch (error) {
         console.error('API Error', error);
@@ -708,6 +995,34 @@ async function initializeLobby() {
     updateCamera(myWorldX, myWorldY);
     updateMyPetScreenPosition(myWorldX, myWorldY);
 
+    logoutBtn.addEventListener('click', () => {
+        showCustomConfirm('登出確認', '您確定要登出並返回登入頁面嗎？', () => {
+            localStorage.clear();
+            showCustomAlert('訊息', '已登出。', () => {
+                window.location.href = 'login.html';
+            });
+        });
+    });
+
+    const backServerBtn = document.getElementById('back-server-btn');
+    backServerBtn.addEventListener('click', () => {
+        showCustomConfirm(
+            '返回伺服器選單',
+            '確定要回到伺服器選擇畫面嗎？',
+            () => {
+                localStorage.removeItem('selected_server_id');
+                window.location.href = 'server-select.html';
+            }
+        );
+    });
+
+    lobbyAreaEl.addEventListener('click', handlePetClick);
+    closeChatBtn.onclick = closeChatBox;
+
+    // ★★ 關鍵：把初始座標塞進 myPetData，等一下要送給 WebSocket
+    myPetData.x = myWorldX;
+    myPetData.y = myWorldY;
+
     // 註冊 WebSocket 回呼
     registerCallback('lobby_state', handleLobbyState);
     registerCallback('player_joined', handlePlayerJoined);
@@ -721,23 +1036,19 @@ async function initializeLobby() {
     registerCallback('battle_invite', handleBattleInvite);
     registerCallback('battle_not_allowed', handleBattleNotAllowed);
     registerCallback('battle_start', handleBattleStart);
+    registerCallback('battle_go', handleBattleGo); 
     registerCallback('battle_result', handleBattleResult);
+    
 
     // [修正] 將包含 score 的完整 petData 傳給 init
     initWebSocket(token, currentMyUserId, myPetData);
 
     // 啟動遊戲迴圈
     modalCloseBtn.style.display = 'none';
+
     commRequestBadge.style.bottom = '20px';
     commRequestBadge.style.left = '20px';
     requestAnimationFrame(gameLoop);
 }
-
-// 登出按鈕
-logoutBtn.addEventListener('click', () => {
-    localStorage.clear();
-    window.location.href = 'login.html';
-});
-
 
 initializeLobby();
