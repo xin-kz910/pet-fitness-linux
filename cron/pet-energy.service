@@ -1,0 +1,11 @@
+[Unit]
+Description=Pet Energy Decay Service
+
+[Service]
+Type=oneshot
+User=jiayen
+WorkingDirectory=/home/jiayen/Desktop/pet_project/backend
+ExecStart=/home/jiayen/Desktop/pet_project/backend/venv/bin/python cron/energy_decay.py
+
+[Install]
+WantedBy=multi-user.target
