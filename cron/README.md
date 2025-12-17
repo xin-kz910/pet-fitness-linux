@@ -1,11 +1,14 @@
-# crontab 操作
-## crontab 中可能要改的地方:
-1. 專案目錄路徑 (`cd /path/to/project`)
-2. Python 執行檔位置 (`/path/to/python`)
-
-## 如何把 `crontab.txt` 的任務安裝到 Linux？ 
-1. `crontab -e`
-2. 把 `crontab.txt` 裡的內容複製貼上到 crontab 編輯器
-3. 存檔 → Cron 排程正式啟用
-4. 查詢是否成功：
-`crontab -l`
+# systemd 操作
+## 重新載入 systemd
+```
+sudo systemctl daemon-reload
+```
+## 啟用並啟動 timer
+```
+sudo systemctl enable pet-energy.timer
+sudo systemctl start pet-energy.timer
+```
+## 確認 timer 是否真的在跑
+```
+systemctl list-timers
+```
