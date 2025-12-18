@@ -1,167 +1,119 @@
-#  就是比狗累 – Just Beagle Lay（運動型虛擬寵物系統）
+# 就是比狗累 – Just Beagle Lay（運動型虛擬寵物系統）
+# FINAL-PROJECT-README-TEMPLATE
+## Concept Development
+本專題旨在設計並實作一個運動型虛擬寵物系統（Virtual Pet Fitness System）。
+使用者可透過網頁登入系統，擁有一隻專屬的虛擬寵物，並透過互動、遊戲或動作行為影響寵物的體力、積分與成長狀態。
 
-> 你不動，你的狗比你還累。
-> 玩家需要透過真實運動來維持寵物體力，並進行互動、聊天與對戰的多人遊戲系統。
+系統強調：
+- 多使用者同時在線
+- 即時狀態同步
+- Linux 環境下的伺服器與服務整合
 
----
+透過本專題，我們實際應用 Linux 系統管理課程中所學的伺服器架構、網路服務與背景任務概念。
+## Implementation Resources
+- Operating System: Linux (Virtual Machine)
+- Web Server: Nginx
+- Backend Framework: FastAPI (Python)
+- Real-time Communication: WebSocket
+- Database: PostgreSQL
+- Frontend: HTML / CSS / JavaScript
+- Image Processing: Mediapipe
+- Camera Device: Built-in Camera
+- Scheduling / Timer: systemd timer
+- Version Control: Git / GitHub
+## Existing Library/Software
+本專題使用以下現有函式庫與軟體工具：
+- FastAPI – 建立後端 API 服務
+- Uvicorn – ASGI Server
+- psycopg / psycopg2 – PostgreSQL 資料庫連線
+- MediaPipe – 現成的動作與姿態偵測影像處理框架
+- Nginx – Web Server 與系統入口
+- WebSocket API – 即時資料同步
+- systemd / systemd timer – Linux 系統服務與排程管理
+- Git / GitHub – 版本控制與團隊協作
+## Implementation Process
+1. System Architecture Design
+    - 規劃前端、後端與即時通訊模組
+    - 設計 API 與資料庫結構
 
-# 1. 專案簡介
+2. Linux Environment Setup
+    - 在 Linux 虛擬機中建置系統環境
+    - 安裝與設定 Nginx、Python 與 PostgreSQL
 
-「就是比狗累」是一個整合 **Linux 多伺服器架構、WebSocket 即時通訊、
-動作偵測和前後端互動遊戲系統** 的專題作品。
+3. Backend Implementation
+    - 使用 FastAPI 建立登入、寵物狀態與排行榜相關 API
+    - 與 PostgreSQL 進行資料存取與狀態更新
 
-玩家可以：
+4. Real-time Communication
+    - 透過 WebSocket 實作即時狀態同步
+    - 支援大廳狀態、排行榜與互動資料即時更新
 
-* 登入系統、選擇伺服器（A/B/C）
-* 在大廳看到所有線上玩家的寵物
-* 與其他玩家聊天、挑戰 1V1 對戰
-* 經營自己的寵物體力（會隨時間下降）
-* 透過辨識系統做「真實運動」或是鍵盤操控來恢復體力
-* 在排行榜中競爭積分
+5. Image Input and Motion Detection
+    - 使用電腦內建攝影機作為影像輸入來源
+    - 透過 MediaPipe 進行動作與姿態偵測
+    - 系統僅使用 MediaPipe 提供的現成功能，未進行模型訓練
+    - 將偵測結果轉換為使用者互動事件，傳送至後端系統處理
 
-這是一個結合 **健康、互動與 Linux 架構** 的實作。
+6. Scheduled System Tasks (systemd timer)
+    - 透過 systemd timer 定期觸發後端服務
+    - 用於定期更新寵物體力與狀態數值
+    - systemd timer 與 systemd service 搭配，使背景任務可由系統層級管理
 
----
+7. Frontend Integration
+    - 前端透過 API 與 WebSocket 與後端系統溝通
+    - 使用者可即時查看寵物狀態與排行榜變化
 
-# 2. 系統特色
-
-###  遊戲功能
-
-* 多人登入 / 註冊
-* 多伺服器大廳（A/B/C 分別獨立）
-* 隨機寵物位置顯示
-* 即時聊天（群聊＋私訊）
-* 寵物體力系統（精神飽滿／疲累／休眠）
-* 小恐龍跑酷式 1v1 對戰
-* 排行榜（分數自動計算與更新）
-
-###  寵物體力機制
-
-* 體力 0～100
-* 每 20 分鐘自動扣 5 點（Cron Job）
-* 30 以下進入休眠，功能受限
-* 需要透過 **運動偵測** 才能恢復體力
-
-### 運動偵測
-
-* 偵測玩家是否運動
-* 偵測成功 → 後端更新寵物體力
-* 玩遊戲得分滿100回復1體力值
-* 讓玩家真正「起身動一動」
-
----
-
-# 3. 系統架構
-
-前端、Nginx、後端 A/B/C、WebSocket A/B/C、資料庫、Mediapipe。
-
+8. Deployment and Testing
+    - 透過 Nginx 部署整體系統
+    - 測試多使用者同時連線與即時互動功能
+## Knowledge from Lecture
+本專題實際應用了 Linux System Administration 課程中所學的知識，包括：
+- Linux 系統環境建置與管理
+- Web Server（Nginx）部署與設定
+- Client / Server 架構概念
+- 即時通訊（WebSocket）
+- 應用程式層級的 timer 機制
+- 背景服務與系統資源管理
+- Git 版本控制與團隊協作
+## Installation
+1. Clone repository
 ```
-     [ Browser Frontend ]
-              │
-              ▼
-      Nginx Reverse Proxy
-              │
-  ┌───────────┼───────────┐
-  ▼           ▼           ▼
-Backend A  Backend B  Backend C
-  │           │           │
-  ▼           ▼           ▼
- WS A       WS B        WS C
-              │
-              ▼
-          Database
-
+git clone <repository-url>
 ```
-
-### 重點技術
-
-* 前端透過 Nginx 提供靜態頁面與反向代理
-* Backend A/B/C 使用 FastAPI，依 server_id 分流玩家
-* WS A/B/C 處理大廳同步、聊天、對戰
-* PostgreSQL 存玩家、寵物、排行榜
-* Mediapipe 偵測玩家動作並回報後端
-
----
-
-# 4. 技術與工具
-
-###  後端 Backend
-
-* Python + FastAPI
-* PostgreSQL
-* Nginx（反向代理）
-* Cron Job（體力下降、排行榜更新）
-* systemd（常駐服務）
-
-### 即時通訊 WebSocket
-
-* Python websockets
-* 即時同步：大廳玩家位置、聊天訊息、對戰狀態
-
-### 前端 Frontend
-
-* HTML / CSS / JavaScript
-* 與 API / WebSocket 串接互動
-
-### 動作偵測
-
-* Mediapipe
-
----
-
-# 5. 系統功能流程
-
-1. **登入 / 註冊**
-2. **選擇伺服器（A/B/C）**
-3. **進入大廳** → 看到所有玩家寵物
-4. **與玩家互動：聊天 / 挑戰**
-5. **寵物體力下降 → 休眠通知**
-6. **玩家到鏡頭前做運動**
-7. **偵測成功 → 體力恢復**
-8. **可繼續對戰、聊天和衝排行榜**
-
----
-
-# 6. 專案結構
-
+2. Install Python dependencies
 ```
-pet-fitness-linux/
-├── backend/            # 三台後端（A/B/C）
-├── ws-server/          # 三台 WebSocket（A/B/C）
-├── frontend/           # 前端頁面
-├── pi-detector/        # 動作偵測（Raspberry Pi）
-├── cron/               # 體力下降 / 排行榜 Job
-└── docs/               # API / WS / 架構文件
+pip install -r requirements.txt
 ```
+3. Setup PostgreSQL database
+    - 建立資料表與初始資料
+4. Start backend server
+```
+sudo systemctl enable pet-backend.service
+sudo systemctl enable pet-backend.timer
+sudo systemctl start pet-backend.timer
+```
+5. Configure and start Nginx
+## Usage
+1. 使用瀏覽器進入系統首頁
+2. 使用者登入後即可查看虛擬寵物狀態 
+3. 透過動作偵測或互動影響寵物體力與積分
+4. systemd timer 會定期更新寵物狀態
+5. 排行榜與狀態會即時更新顯示
+## Job Assignment
+| 學號 | 姓名 | 分工 |
+| -------- | -------- | -------- |
+| 112213025 | 施淯馨 | 前端介面設計與使用者互動功能  |
+| 112213034 | 郭家言 | 後端開發、系統串接、Mediapipe  |
+| 112213018 | 林秀萍 | WebSocket 即時通訊與同步功能 |
+| 112213016 | 陳詩穎 | systemd timer、排程設定、ReadMe 撰寫  |
+## References
+- FastAPI Documentation
+- Nginx Official Documentation
+- PostgreSQL Documentation
+- MediaPipe Documentation
+- systemd.timer Documentation
+- Linux System Administration Lecture Slides
 
----
-
-# 7. 遇到的挑戰
-
-* 時間緊迫，所以沒辦法做的太完善
-* 用到沒碰過的技術，摸索時間較長
-* WebSocket 同步問題
-* Raspberry Pi 動作偵測失敗後改成Mediapipe
-
----
-
-# 8. 未來展望
-
-* 加入更多運動類型
-* 寵物進化與個人化外觀
-* 多人協作與多人對戰模式
-* Docker / 雲端部署提升擴充性
-
----
-
-# 9. 開發團隊
-
-| 學號        | 姓名  | 分工                       |
-| --------- | --- | ------------------------ |
-| 112213016 | 陳詩穎 |  systemd timer  |
-| 112213018 | 林秀萍 |   websocket      |
-| 112213025 | 施淯馨 |   前端網頁設計     |
-| 112213034 | 郭家言 | 後端&串接&Mediapipe |
 
 
 
