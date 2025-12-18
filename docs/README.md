@@ -1,5 +1,4 @@
 # 就是比狗累 – Just Beagle Lay（運動型虛擬寵物系統）
-# FINAL-PROJECT-README-TEMPLATE
 ## Concept Development
 本專題旨在設計並實作一個運動型虛擬寵物系統（Virtual Pet Fitness System）。
 使用者可透過網頁登入系統，擁有一隻專屬的虛擬寵物，並透過互動、遊戲或動作行為影響寵物的體力、積分與成長狀態。
